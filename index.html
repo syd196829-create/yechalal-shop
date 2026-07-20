@@ -1198,6 +1198,7 @@
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
       <button id="liveGuestReqBtn" class="live-guest-req-btn">🙋 ጥያቄዎች</button>
+      <button id="liveCamFlipBtn" class="live-mute-btn" title="ካሜራ ቀይር" style="display:none;">🔄</button>
       <button id="liveMuteBtn" class="live-mute-btn" title="ማይክ ማጥፋት/ማብራት">🎤</button>
       <button id="liveViewerClose">✕ ውጣ</button>
     </div>
@@ -3759,9 +3760,17 @@ bottomNav.addEventListener('click', (e)=>{
 /* ---------- live streaming (Agora) ---------- */
 const AGORA_APP_ID = "1e50bb68affd4d5494a61e8e578adab5";
 const agoraClient = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
+async function resolveFbUid(agoraUid){
+  for(let i=0; i<8; i++){
+    if(agoraUidToFirebaseUid[agoraUid]) return agoraUidToFirebaseUid[agoraUid];
+    await new Promise(r=> setTimeout(r, 250));
+  }
+  return null;
+}
 agoraClient.on('user-published', async (user, mediaType)=>{
   try{ await agoraClient.subscribe(user, mediaType); }catch(err){ return; }
-  const fbUid = agoraUidToFirebaseUid[user.uid] || `remote-${user.uid}`;
+  const resolvedUid = await resolveFbUid(user.uid);
+  const fbUid = resolvedUid || `remote-${user.uid}`;
   const name = agoraUidToName[user.uid] || 'እንግዳ';
   ensureTile(fbUid, name, fbUid === currentLiveHostUid);
   if(mediaType === 'video'){ user.videoTrack.play(tileVideoId(fbUid)); }
@@ -3832,6 +3841,9 @@ const liveComments = document.getElementById('liveComments');
 const liveCommentInput = document.getElementById('liveCommentInput');
 const liveCommentSend = document.getElementById('liveCommentSend');
 const liveMuteBtn = document.getElementById('liveMuteBtn');
+const liveCamFlipBtn = document.getElementById('liveCamFlipBtn');
+let liveCamFacingMode = 'user';
+let isSwitchingCam = false;
 const liveJoinReqBtn = document.getElementById('liveJoinReqBtn');
 const liveGuestReqBtn = document.getElementById('liveGuestReqBtn');
 const liveGuestRequestsPanel = document.getElementById('liveGuestRequests');
@@ -4028,18 +4040,19 @@ async function becomeGuest(){
   if(isGuestPublishing || !currentUser) return;
   try{
     await agoraClient.setClientRole('host');
-    localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+    localVideoTrack = await AgoraRTC.createCameraVideoTrack({ facingMode: liveCamFacingMode });
     localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-    await agoraClient.publish([localVideoTrack, localAudioTrack]);
-    isGuestPublishing = true;
     const name = currentUser.displayName || currentUser.email.split('@')[0];
-    ensureTile(currentUser.uid, name, false);
-    localVideoTrack.play(tileVideoId(currentUser.uid));
     await setDoc(doc(db, "liveGuests", `${currentLiveChannel}_${currentUser.uid}`), {
       channelName: currentLiveChannel, uid: currentUser.uid, name, agoraUid: myAgoraUid, joinedAt: serverTimestamp()
     });
+    await agoraClient.publish([localVideoTrack, localAudioTrack]);
+    isGuestPublishing = true;
+    ensureTile(currentUser.uid, name, false);
+    localVideoTrack.play(tileVideoId(currentUser.uid));
     liveJoinReqBtn.style.display = 'none';
     liveMuteBtn.style.display = 'flex';
+    liveCamFlipBtn.style.display = 'flex';
     isMicMuted = false;
     liveMuteBtn.textContent = '🎤';
     liveMuteBtn.classList.remove('muted');
@@ -4061,6 +4074,7 @@ async function revertToAudience(){
   liveJoinReqBtn.disabled = false;
   liveJoinReqBtn.textContent = '🙋 ልግባ';
   liveMuteBtn.style.display = 'none';
+  liveCamFlipBtn.style.display = 'none';
 }
 
 openLiveBtn.addEventListener('click', ()=>{
@@ -4087,7 +4101,7 @@ liveStartSubmit.addEventListener('click', async ()=>{
     const token = await fetchAgoraToken(pendingLiveChannel);
     await agoraClient.setClientRole('host');
     myAgoraUid = await agoraClient.join(AGORA_APP_ID, pendingLiveChannel, token, null);
-    localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+    localVideoTrack = await AgoraRTC.createCameraVideoTrack({ facingMode: liveCamFacingMode });
     localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     let publishVideoTrack = localVideoTrack;
     if(liveActiveFilter !== 'none'){
@@ -4112,6 +4126,7 @@ liveStartSubmit.addEventListener('click', async ()=>{
     liveMuteBtn.textContent = '🎤';
     liveMuteBtn.classList.remove('muted');
     liveMuteBtn.style.display = 'flex';
+    liveCamFlipBtn.style.display = 'flex';
     liveJoinReqBtn.style.display = 'none';
     giftBar.style.display = 'none';
     liveViewerName.textContent = `${shopName} (አንተ)`;
@@ -4137,6 +4152,7 @@ async function joinAsViewer(channelName, token, hostName, hostUid, hostAgoraUid)
   currentLiveChannel = channelName;
   giftBar.style.display = (currentUser && currentLiveHostUid === currentUser.uid) ? 'none' : 'flex';
   liveMuteBtn.style.display = 'none';
+  liveCamFlipBtn.style.display = 'none';
   liveGuestReqBtn.style.display = 'none';
   liveJoinReqBtn.style.display = (currentUser && currentLiveHostUid !== currentUser.uid) ? 'flex' : 'none';
   liveJoinReqBtn.disabled = false;
@@ -4189,8 +4205,42 @@ async function leaveLive(){
   liveMuteBtn.style.display = 'none';
   liveMuteBtn.classList.remove('muted');
   liveMuteBtn.textContent = '🎤';
+  liveCamFlipBtn.style.display = 'none';
 }
 liveViewerClose.addEventListener('click', leaveLive);
+
+async function switchLiveCamera(){
+  if(isSwitchingCam || !localVideoTrack || (!isBroadcastingHost && !isGuestPublishing)) return;
+  isSwitchingCam = true;
+  liveCamFlipBtn.disabled = true;
+  const myUid = currentUser.uid;
+  try{
+    liveCamFacingMode = liveCamFacingMode === 'user' ? 'environment' : 'user';
+    stopLiveFilterPipeline();
+    const oldVideoTrack = localVideoTrack;
+    const newVideoTrack = await AgoraRTC.createCameraVideoTrack({ facingMode: liveCamFacingMode });
+    let publishVideoTrack = newVideoTrack;
+    if(liveActiveFilter !== 'none'){
+      const filteredMsTrack = applyLiveFilterPipeline(newVideoTrack);
+      if(filteredMsTrack){
+        liveCustomVideoTrack = AgoraRTC.createCustomVideoTrack({ mediaStreamTrack: filteredMsTrack });
+        publishVideoTrack = liveCustomVideoTrack;
+      }
+    }
+    await agoraClient.unpublish(oldVideoTrack);
+    oldVideoTrack.close();
+    localVideoTrack = newVideoTrack;
+    await agoraClient.publish([publishVideoTrack]);
+    (liveCustomVideoTrack || localVideoTrack).play(tileVideoId(myUid));
+  } catch(err){
+    console.error('switchLiveCamera error:', err);
+    liveCamFacingMode = liveCamFacingMode === 'user' ? 'environment' : 'user';
+  } finally {
+    isSwitchingCam = false;
+    liveCamFlipBtn.disabled = false;
+  }
+}
+liveCamFlipBtn.addEventListener('click', switchLiveCamera);
 
 /* ---------- stories (photo-only, no name/price) ---------- */
 const storyModal = document.getElementById('storyModal');
