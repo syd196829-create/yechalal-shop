@@ -582,6 +582,10 @@
     width:100%; height:100%; display:flex; align-items:center; justify-content:center;
     font-size:4rem; background:linear-gradient(160deg,var(--green-deep),#0a2216);
   }
+  .ad-card{ display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,#1a1a1a,#000); }
+  .ad-slot-inner{ text-align:center; color:var(--muted); padding:20px; border:1px dashed rgba(255,255,255,0.25); border-radius:14px; }
+  .ad-slot-badge{ display:inline-block; font-size:0.75rem; letter-spacing:0.05em; text-transform:uppercase; background:rgba(255,255,255,0.1); color:var(--gold); padding:4px 10px; border-radius:20px; margin-bottom:12px; }
+  .ad-slot-msg{ font-size:1.1rem; line-height:1.6; }
   .feed-overlay{
     position:absolute; left:0; right:0; bottom:0; z-index:2; padding:24px 90px 34px 20px;
     background:linear-gradient(to top, rgba(0,0,0,0.85), transparent);
@@ -2511,10 +2515,22 @@ function renderMarket(){
   }
 }
 
+function adCardHtml(n){
+  return `
+      <div class="feed-card ad-card" data-ad-slot="${n}">
+        <div class="ad-slot-inner">
+          <span class="ad-slot-badge">Sponsored</span>
+          <p class="ad-slot-msg">የማስታወቂያ ቦታ<br><span style="font-size:0.8em; opacity:0.7;">Ad space — coming soon</span></p>
+        </div>
+      </div>`;
+}
 function renderFeed(filtered){
-  marketFeed.innerHTML = `
-    <div class="feed-close-bar"><button id="feedBackBtn">✕ ዝጋ</button></div>
-  ` + filtered.map(p=>{
+  const AD_EVERY = 6;
+  let cardsHtml = '';
+  filtered.forEach((p, idx)=>{
+    if(idx > 0 && idx % AD_EVERY === 0){
+      cardsHtml += adCardHtml(Math.floor(idx/AD_EVERY));
+    }
     const media = mediaHtml(p);
     const showActions = !currentUser || currentUser.uid !== p.uid;
     const isFollowing = followingSet.has(p.uid);
@@ -2522,7 +2538,7 @@ function renderFeed(filtered){
     const initial = (p.shop || '?').trim().charAt(0).toUpperCase();
     const viewCount = formatCount(p.views || 0);
     const likeCount = formatCount(p.likeCount || 0);
-    return `
+    cardsHtml += `
       <div class="feed-card" data-feed-pid="${p.id}">
         ${media}
         <div class="feed-overlay">
@@ -2557,7 +2573,10 @@ function renderFeed(filtered){
           </div>
         </div>` : ''}
       </div>`;
-  }).join('');
+  });
+  marketFeed.innerHTML = `
+    <div class="feed-close-bar"><button id="feedBackBtn">✕ ዝጋ</button></div>
+  ` + cardsHtml;
   setupFeedViewObserver();
 }
 
