@@ -1322,26 +1322,26 @@
     <h3>ቅንብሮች</h3>
     <p class="modal-sub">የመለያዎ አጠቃላይ ቅንብሮች</p>
 
-    <div class="settings-group-label">መለያ</div>
-    <button class="settings-row" data-open-sub="accountEditModal"><span class="sr-left"><span class="sr-icon">👤</span>መገለጫ አርትዖት</span><span class="sr-arrow">‹</span></button>
-    <button class="settings-row" data-open-sub="privacyModal"><span class="sr-left"><span class="sr-icon">🔒</span>ግላዊነት</span><span class="sr-arrow">‹</span></button>
+    <div class="settings-group-label" data-i18n="settings_account">መለያ</div>
+    <button class="settings-row" data-open-sub="accountEditModal"><span class="sr-left"><span class="sr-icon">👤</span><span data-i18n="settings_edit_profile">መገለጫ አርትዖት</span></span><span class="sr-arrow">‹</span></button>
+    <button class="settings-row" data-open-sub="privacyModal"><span class="sr-left"><span class="sr-icon">🔒</span><span data-i18n="settings_privacy">ግላዊነት</span></span><span class="sr-arrow">‹</span></button>
 
-    <div class="settings-group-label">ገንዘብ</div>
-    <button class="settings-row" id="settingsWalletRow"><span class="sr-left"><span class="sr-icon">🪙</span>ቦርሳ እና ኮይን</span><span class="sr-arrow">‹</span></button>
+    <div class="settings-group-label" data-i18n="settings_money">ገንዘብ</div>
+    <button class="settings-row" id="settingsWalletRow"><span class="sr-left"><span class="sr-icon">🪙</span><span data-i18n="settings_wallet">ቦርሳ እና ኮይን</span></span><span class="sr-arrow">‹</span></button>
 
-    <div class="settings-group-label">ግብይት</div>
-    <button class="settings-row" id="settingsOrdersRow"><span class="sr-left"><span class="sr-icon">📦</span>የኔ ትዕዛዞች</span><span class="sr-arrow">‹</span></button>
+    <div class="settings-group-label" data-i18n="settings_trade">ግብይት</div>
+    <button class="settings-row" id="settingsOrdersRow"><span class="sr-left"><span class="sr-icon">📦</span><span data-i18n="settings_orders">የኔ ትዕዛዞች</span></span><span class="sr-arrow">‹</span></button>
 
-    <div class="settings-group-label">ምርጫዎች</div>
-    <button class="settings-row" data-open-sub="notificationsModal"><span class="sr-left"><span class="sr-icon">🔔</span>ማሳወቂያዎች</span><span class="sr-arrow">‹</span></button>
-    <button class="settings-row" data-open-sub="languageModal"><span class="sr-left"><span class="sr-icon">🌐</span>ቋንቋ</span><span class="sr-arrow">‹</span></button>
+    <div class="settings-group-label" data-i18n="settings_prefs">ምርጫዎች</div>
+    <button class="settings-row" data-open-sub="notificationsModal"><span class="sr-left"><span class="sr-icon">🔔</span><span data-i18n="settings_notifications">ማሳወቂያዎች</span></span><span class="sr-arrow">‹</span></button>
+    <button class="settings-row" data-open-sub="languageModal"><span class="sr-left"><span class="sr-icon">🌐</span><span data-i18n="settings_language">ቋንቋ</span></span><span class="sr-arrow">‹</span></button>
 
-    <div class="settings-group-label">ድጋፍ</div>
-    <button class="settings-row" data-open-sub="supportModal"><span class="sr-left"><span class="sr-icon">ℹ️</span>ስለ Yechalal Shop</span><span class="sr-arrow">‹</span></button>
+    <div class="settings-group-label" data-i18n="settings_support">ድጋፍ</div>
+    <button class="settings-row" data-open-sub="supportModal"><span class="sr-left"><span class="sr-icon">ℹ️</span><span data-i18n="settings_about">ስለ Yechalal Shop</span></span><span class="sr-arrow">‹</span></button>
 
-    <div class="settings-group-label">መለያ ተግባራት</div>
-    <button class="settings-row danger center" id="settingsLogoutBtn">ውጣ (Log out)</button>
-    <button class="settings-row danger center" id="settingsDeleteBtn">መለያ ሰርዝ</button>
+    <div class="settings-group-label" data-i18n="settings_account_actions">መለያ ተግባራት</div>
+    <button class="settings-row danger center" id="settingsLogoutBtn" data-i18n="settings_logout">ውጣ (Log out)</button>
+    <button class="settings-row danger center" id="settingsDeleteBtn" data-i18n="settings_delete">መለያ ሰርዝ</button>
   </div>
 </div>
 
@@ -1438,7 +1438,8 @@
     <div class="settings-lang-opt" data-lang="en">English <span class="lc">✓</span></div>
     <div class="settings-lang-opt" data-lang="om">Afaan Oromoo <span class="lc">✓</span></div>
     <div class="settings-lang-opt" data-lang="ti">ትግርኛ <span class="lc">✓</span></div>
-    <p class="settings-note" style="margin-top:14px;">ማሳሰቢያ፡ ሙሉ የቋንቋ ትርጉም በቅርቡ ይጨመራል። አሁን መተግበሪያው በአማርኛ ብቻ ነው የሚሰራው።</p>
+    <div class="settings-lang-opt" data-lang="ar">العربية <span class="lc">✓</span></div>
+    <p class="settings-note" id="langNote" style="margin-top:14px;">ማሳሰቢያ፡ ዋና ዋና ገፆች ብቻ ተተርጉመዋል፣ ተጨማሪ ገፆች በቅርቡ ይታከላሉ።</p>
   </div>
 </div>
 
@@ -1841,11 +1842,11 @@
 </div>
 
 <div class="bottom-nav" id="bottomNav">
-  <button class="bn-item" data-bn="home">🏠<span>መነሻ</span></button>
-  <button class="bn-item active" data-bn="feed">🎬<span>ቪዲዮ</span></button>
+  <button class="bn-item" data-bn="home">🏠<span data-i18n="nav_home">መነሻ</span></button>
+  <button class="bn-item active" data-bn="feed">🎬<span data-i18n="nav_feed">ቪዲዮ</span></button>
   <button class="bn-item bn-post" data-bn="post">➕</button>
-  <button class="bn-item" data-bn="chat"><span class="bn-icon-wrap">💬<span class="bn-badge hidden" id="bnChatBadge">0</span></span><span>ውይይት</span></button>
-  <button class="bn-item" data-bn="account">👤<span>እኔ</span></button>
+  <button class="bn-item" data-bn="chat"><span class="bn-icon-wrap">💬<span class="bn-badge hidden" id="bnChatBadge">0</span></span><span data-i18n="nav_chat">ውይይት</span></button>
+  <button class="bn-item" data-bn="account">👤<span data-i18n="nav_account">እኔ</span></button>
 </div>
 
 <script type="module">
@@ -3712,13 +3713,85 @@ if(pushPermBtn){
   refreshPushPermUI();
 }
 
-/* language (placeholder — full i18n coming soon) */
+/* language — real i18n for nav + settings (more screens to follow) */
+const I18N = {
+  am: {
+    nav_home:"መነሻ", nav_feed:"ቪዲዮ", nav_chat:"ውይይት", nav_account:"እኔ",
+    settings_account:"መለያ", settings_edit_profile:"መገለጫ አርትዖት", settings_privacy:"ግላዊነት",
+    settings_money:"ገንዘብ", settings_wallet:"ቦርሳ እና ኮይን",
+    settings_trade:"ግብይት", settings_orders:"የኔ ትዕዛዞች",
+    settings_prefs:"ምርጫዎች", settings_notifications:"ማሳወቂያዎች", settings_language:"ቋንቋ",
+    settings_support:"ድጋፍ", settings_about:"ስለ Yechalal Shop",
+    settings_account_actions:"መለያ ተግባራት", settings_logout:"ውጣ (Log out)", settings_delete:"መለያ ሰርዝ",
+    langNote:"ማሳሰቢያ፡ ዋና ዋና ገፆች ብቻ ተተርጉመዋል፣ ተጨማሪ ገፆች በቅርቡ ይታከላሉ።"
+  },
+  en: {
+    nav_home:"Home", nav_feed:"Videos", nav_chat:"Chat", nav_account:"Me",
+    settings_account:"Account", settings_edit_profile:"Edit Profile", settings_privacy:"Privacy",
+    settings_money:"Money", settings_wallet:"Wallet & Coins",
+    settings_trade:"Trading", settings_orders:"My Orders",
+    settings_prefs:"Preferences", settings_notifications:"Notifications", settings_language:"Language",
+    settings_support:"Support", settings_about:"About Yechalal Shop",
+    settings_account_actions:"Account Actions", settings_logout:"Log out", settings_delete:"Delete Account",
+    langNote:"Note: Main screens are translated so far, more are coming soon."
+  },
+  om: {
+    nav_home:"Mana", nav_feed:"Viidiyoo", nav_chat:"Haasawaa", nav_account:"Ana",
+    settings_account:"Maqaa", settings_edit_profile:"Gulaali Profaayilii", settings_privacy:"Iccitii",
+    settings_money:"Maallaqa", settings_wallet:"Boorsaa fi Koinii",
+    settings_trade:"Gabaa", settings_orders:"Ajaja Koo",
+    settings_prefs:"Filannoo", settings_notifications:"Beeksisa", settings_language:"Afaan",
+    settings_support:"Deeggarsa", settings_about:"Waa'ee Yechalal Shop",
+    settings_account_actions:"Tarkaanfii Maqaa", settings_logout:"Ba'i", settings_delete:"Maqaa Haqi",
+    langNote:"Yaadachiisa: Fuulawwan ijoo qofatu hiikame, kanneen biraa dhihoo dhufu."
+  },
+  ti: {
+    nav_home:"መበገሲ", nav_feed:"ቪድዮ", nav_chat:"ዝርርብ", nav_account:"ኣነ",
+    settings_account:"ኣካውንት", settings_edit_profile:"መግለጺ ኣርትዕ", settings_privacy:"ውልቃዊነት",
+    settings_money:"ገንዘብ", settings_wallet:"ቦርሳን ኮይንን",
+    settings_trade:"ንግዲ", settings_orders:"ትእዛዛተይ",
+    settings_prefs:"ምርጫታት", settings_notifications:"መጠንቀቕታታት", settings_language:"ቋንቋ",
+    settings_support:"ደገፍ", settings_about:"ብዛዕባ Yechalal Shop",
+    settings_account_actions:"ተግባራት ኣካውንት", settings_logout:"ውጻእ", settings_delete:"ኣካውንት ደምስስ",
+    langNote:"መተሓሳሰቢ፡ ቀንዲ ገጻት ጥራይ ተተርጒሙ፣ ተወሳኺ ብቕልጡፍ ክውሰኽ እዩ።"
+  },
+  ar: {
+    nav_home:"الرئيسية", nav_feed:"فيديو", nav_chat:"دردشة", nav_account:"أنا",
+    settings_account:"الحساب", settings_edit_profile:"تعديل الملف الشخصي", settings_privacy:"الخصوصية",
+    settings_money:"المال", settings_wallet:"المحفظة والعملات",
+    settings_trade:"التجارة", settings_orders:"طلباتي",
+    settings_prefs:"التفضيلات", settings_notifications:"الإشعارات", settings_language:"اللغة",
+    settings_support:"الدعم", settings_about:"عن Yechalal Shop",
+    settings_account_actions:"إجراءات الحساب", settings_logout:"تسجيل الخروج", settings_delete:"حذف الحساب",
+    langNote:"ملاحظة: تمت ترجمة الشاشات الرئيسية فقط حتى الآن، والمزيد قادم قريبًا."
+  }
+};
+function applyLanguage(lang){
+  const dict = I18N[lang] || I18N.am;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(dict[key]) el.textContent = dict[key];
+  });
+  const langNoteEl = document.getElementById('langNote');
+  if(langNoteEl && dict.langNote) langNoteEl.textContent = dict.langNote;
+  document.documentElement.setAttribute('lang', lang);
+  document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+  localStorage.setItem('yechalalLang', lang);
+}
 document.querySelectorAll('.settings-lang-opt').forEach(opt=>{
   opt.addEventListener('click', ()=>{
     document.querySelectorAll('.settings-lang-opt').forEach(o=> o.classList.remove('active'));
     opt.classList.add('active');
+    applyLanguage(opt.dataset.lang);
   });
 });
+(function initLanguage(){
+  const saved = localStorage.getItem('yechalalLang') || 'am';
+  document.querySelectorAll('.settings-lang-opt').forEach(o=>{
+    o.classList.toggle('active', o.dataset.lang === saved);
+  });
+  applyLanguage(saved);
+})();
 
 /* logout / delete */
 document.getElementById('settingsLogoutBtn').addEventListener('click', async ()=>{
