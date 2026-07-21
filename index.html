@@ -1260,12 +1260,12 @@
   <div class="modal-box">
     <button class="modal-close" id="buyCoinsClose" aria-label="ዝጋ">✕</button>
     <h3>ኮይን ግዛ</h3>
-    <p class="modal-sub">1 ኮይን = 1 ብር። ጥቅል ይምረጡ</p>
+    <p class="modal-sub">1 ኮይን = 5 ብር። ጥቅል ይምረጡ</p>
     <div class="coin-packages" id="coinPackages">
-      <button class="coin-pkg" data-amt="50"><b>50</b><span>ኮይን — 50 ብር</span></button>
-      <button class="coin-pkg" data-amt="100"><b>100</b><span>ኮይን — 100 ብር</span></button>
-      <button class="coin-pkg" data-amt="250"><b>250</b><span>ኮይን — 250 ብር</span></button>
-      <button class="coin-pkg" data-amt="500"><b>500</b><span>ኮይን — 500 ብር</span></button>
+      <button class="coin-pkg" data-amt="50"><b>50</b><span>ኮይን — 250 ብር</span></button>
+      <button class="coin-pkg" data-amt="100"><b>100</b><span>ኮይን — 500 ብር</span></button>
+      <button class="coin-pkg" data-amt="250"><b>250</b><span>ኮይን — 1250 ብር</span></button>
+      <button class="coin-pkg" data-amt="500"><b>500</b><span>ኮይን — 2500 ብር</span></button>
     </div>
     <div class="pay-info-box">
       <b>የመክፈያ መረጃ፦</b><br>
@@ -1285,9 +1285,9 @@
   <div class="modal-box">
     <button class="modal-close" id="withdrawClose" aria-label="ዝጋ">✕</button>
     <h3>ገቢ አውጣ</h3>
-    <p class="modal-sub">የተጠራቀመ ገቢዎን ወደ ባንክ/ቴሌብር ይላክልዎታል</p>
+    <p class="modal-sub">የተጠራቀመ ገቢዎን ወደ ባንክ/ቴሌብር ይላክልዎታል (ዝቅተኛ 100 ብር)</p>
     <label class="field-label">የሚፈልጉት መጠን (ብር)</label>
-    <input class="field-input" type="number" id="withdrawAmount" placeholder="200">
+    <input class="field-input" type="number" id="withdrawAmount" placeholder="100" min="100">
     <label class="field-label">የባንክ/ቴሌብር ዝርዝር</label>
     <input class="field-input" type="text" id="withdrawDetails" placeholder="ባንክ ስም + ቁጥር ወይም ቴሌብር ቁጥር">
     <button class="btn-block gold" id="withdrawSubmit">ጥያቄ ላክ</button>
@@ -1300,10 +1300,18 @@
   <div class="modal-box">
     <button class="modal-close" id="adminClose" aria-label="ዝጋ">✕</button>
     <h3>የደረሰኝ ማረጋገጫ</h3>
-    <p class="modal-sub">የኮይን ጥያቄዎች</p>
-    <div id="adminCoinRequests"></div>
-    <p class="modal-sub" style="margin-top:18px;">የገቢ ማውጣት ጥያቄዎች</p>
-    <div id="adminWithdrawRequests"></div>
+    <div class="admin-tabs" style="display:flex; gap:8px; margin:10px 0 14px;">
+      <button class="admin-tab-btn active" id="adminTabCoinBtn" style="flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.08); color:var(--cream); font-weight:700;">🪙 የኮይን ጥያቄ</button>
+      <button class="admin-tab-btn" id="adminTabWithdrawBtn" style="flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:transparent; color:var(--muted); font-weight:700;">💵 ገቢ ማውጫ</button>
+    </div>
+    <div id="adminCoinSection">
+      <p class="modal-sub">የኮይን ጥያቄዎች</p>
+      <div id="adminCoinRequests"></div>
+    </div>
+    <div id="adminWithdrawSection" style="display:none;">
+      <p class="modal-sub">የገቢ ማውጣት ጥያቄዎች</p>
+      <div id="adminWithdrawRequests"></div>
+    </div>
   </div>
 </div>
 
@@ -4606,7 +4614,7 @@ coinRequestSubmit.addEventListener('click', async ()=>{
     await addDoc(collection(db, "coinRequests"), {
       uid: currentUser.uid,
       name: currentUser.displayName || currentUser.email.split('@')[0],
-      email: currentUser.email, amount: selectedPkg, reference: ref,
+      email: currentUser.email, amount: selectedPkg, priceBirr: selectedPkg*5, reference: ref,
       status: 'pending', createdAt: serverTimestamp()
     });
     coinMsg.textContent = "ጥያቄዎ ተልኳል! ከተረጋገጠ በኋላ ኮይን ይጨመርልዎታል 🎉"; coinMsg.classList.add('ok');
@@ -4630,6 +4638,7 @@ withdrawSubmit.addEventListener('click', async ()=>{
   const amt = parseInt(withdrawAmount.value, 10);
   const details = withdrawDetails.value.trim();
   if(!amt || amt <= 0){ withdrawMsg.textContent = "ትክክለኛ መጠን ያስገቡ"; withdrawMsg.className = 'auth-msg error'; return; }
+  if(amt < 100){ withdrawMsg.textContent = "ዝቅተኛው የመውጫ መጠን 100 ብር ነው"; withdrawMsg.className = 'auth-msg error'; return; }
   if(amt > myEarnings){ withdrawMsg.textContent = "ካለዎት ገቢ በላይ ነው"; withdrawMsg.className = 'auth-msg error'; return; }
   if(!details){ withdrawMsg.textContent = "የባንክ/ቴሌብር ዝርዝር ያስፈልጋል"; withdrawMsg.className = 'auth-msg error'; return; }
   withdrawSubmit.disabled = true; withdrawMsg.textContent = "እየተላከ ነው..."; withdrawMsg.className = 'auth-msg';
@@ -4656,6 +4665,21 @@ walletAdminBtn.addEventListener('click', ()=>{
 });
 adminClose.addEventListener('click', ()=> adminModal.classList.remove('open'));
 adminModal.addEventListener('click', (e)=>{ if(e.target === adminModal) adminModal.classList.remove('open'); });
+const adminTabCoinBtn = document.getElementById('adminTabCoinBtn');
+const adminTabWithdrawBtn = document.getElementById('adminTabWithdrawBtn');
+const adminCoinSection = document.getElementById('adminCoinSection');
+const adminWithdrawSection = document.getElementById('adminWithdrawSection');
+function setAdminTab(tab){
+  const coinActive = tab === 'coin';
+  adminCoinSection.style.display = coinActive ? 'block' : 'none';
+  adminWithdrawSection.style.display = coinActive ? 'none' : 'block';
+  adminTabCoinBtn.style.background = coinActive ? 'rgba(255,255,255,0.08)' : 'transparent';
+  adminTabCoinBtn.style.color = coinActive ? 'var(--cream)' : 'var(--muted)';
+  adminTabWithdrawBtn.style.background = coinActive ? 'transparent' : 'rgba(255,255,255,0.08)';
+  adminTabWithdrawBtn.style.color = coinActive ? 'var(--muted)' : 'var(--cream)';
+}
+adminTabCoinBtn.addEventListener('click', ()=> setAdminTab('coin'));
+adminTabWithdrawBtn.addEventListener('click', ()=> setAdminTab('withdraw'));
 
 function startAdminListeners(){
   if(!unsubAdminCoin){
@@ -4665,7 +4689,7 @@ function startAdminListeners(){
       adminCoinRequests.innerHTML = snap.docs.map(d=>{
         const r = d.data();
         return `<div class="admin-row">
-          <div class="arow-top"><span>${escapeHtml(r.name||'')}</span><span>${r.amount} ብር</span></div>
+          <div class="arow-top"><span>${escapeHtml(r.name||'')}</span><span>${r.amount} ኮይን — ${r.priceBirr || (r.amount*5)} ብር</span></div>
           <div class="arow-sub">ደረሰኝ: ${escapeHtml(r.reference||'')} · ${escapeHtml(r.email||'')}</div>
           <div class="arow-actions">
             <button class="arow-approve" data-id="${d.id}" data-uid="${r.uid}" data-amt="${r.amount}">አጽድቅ</button>
@@ -4729,8 +4753,9 @@ giftBar.addEventListener('click', async (e)=>{
     return;
   }
   try{
+    const recipientEarning = Math.round(cost * 1.5 * 100) / 100;
     await updateDoc(doc(db, "users", currentUser.uid), { coins: increment(-cost) });
-    await updateDoc(doc(db, "users", currentLiveHostUid), { earnings: increment(cost) });
+    await updateDoc(doc(db, "users", currentLiveHostUid), { earnings: increment(recipientEarning) });
     const fly = document.createElement('div');
     fly.className = 'gift-fly';
     fly.textContent = btn.dataset.gift;
