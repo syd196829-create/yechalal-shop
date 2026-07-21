@@ -1358,6 +1358,8 @@
     <div class="auth-msg" id="acctAvatarMsg" style="text-align:center;"></div>
     <label class="field-label">ስም</label>
     <input class="field-input" type="text" id="acctName">
+    <label class="field-label">ኢሜይል (የመግቢያ)</label>
+    <p id="acctEmailShow" style="padding:10px 14px; margin:0 0 14px; color:var(--muted); background:rgba(255,255,255,0.05); border-radius:10px;"></p>
     <label class="field-label">እድሜ</label>
     <input class="field-input" type="number" id="acctAge">
     <label class="field-label">ፆታ</label>
@@ -3585,6 +3587,8 @@ async function openAccountEditModal(){
   acctNewPass.value='';
   acctName.value = currentUser.displayName || '';
   acctAvatarPreview.textContent = (currentUser.displayName || currentUser.email || '?').trim().charAt(0).toUpperCase();
+  const acctEmailShow = document.getElementById('acctEmailShow');
+  if(acctEmailShow) acctEmailShow.textContent = currentUser.email || '';
   try{
     const snap = await getDoc(doc(db, "users", currentUser.uid));
     if(snap.exists()){
