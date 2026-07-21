@@ -445,6 +445,25 @@
     padding:8px 16px; border-radius:100px; font-size:0.85rem; font-weight:600; cursor:pointer;
   }
   .live-tag{background:var(--red); padding:5px 12px; border-radius:100px; font-size:0.78rem; font-weight:800;}
+  .live-like-badge{
+    background:rgba(255,255,255,0.15); padding:5px 10px; border-radius:100px; font-size:0.78rem; font-weight:700; color:var(--cream);
+  }
+  .live-share-btn{
+    width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.15); border:none; color:var(--cream);
+    font-size:1rem; display:flex; align-items:center; justify-content:center;
+  }
+  .live-heart-layer{
+    position:absolute; inset:0; z-index:5; pointer-events:none; overflow:hidden;
+  }
+  .live-heart-float{
+    position:absolute; bottom:80px; font-size:2rem; opacity:1;
+    animation:liveHeartRise 1.6s ease-out forwards;
+  }
+  @keyframes liveHeartRise{
+    0%{ transform:translateY(0) scale(0.6); opacity:1; }
+    15%{ transform:translateY(-30px) scale(1.1); opacity:1; }
+    100%{ transform:translateY(-320px) scale(1); opacity:0; }
+  }
   .live-join-btn{
     background:var(--gold) !important; color:#1A1400 !important; border:none !important;
     padding:9px 14px !important; border-radius:100px; font-size:0.78rem; font-weight:800; flex:0 0 auto;
@@ -1195,8 +1214,10 @@
     <div style="display:flex; align-items:center; gap:10px;">
       <span class="live-tag">🔴 LIVE</span>
       <span id="liveViewerName" style="font-weight:700;"></span>
+      <span id="liveLikeCount" class="live-like-badge">❤️ 0</span>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
+      <button id="liveShareBtn" class="live-share-btn" title="ላይቭ አጋራ">🔗</button>
       <button id="liveGuestReqBtn" class="live-guest-req-btn">🙋 ጥያቄዎች</button>
       <button id="liveCamFlipBtn" class="live-mute-btn" title="ካሜራ ቀይር" style="display:none;">🔄</button>
       <button id="liveMuteBtn" class="live-mute-btn" title="ማይክ ማጥፋት/ማብራት">🎤</button>
@@ -1204,6 +1225,7 @@
     </div>
   </div>
   <div class="live-grid" id="liveGrid"></div>
+  <div class="live-heart-layer" id="liveHeartLayer"></div>
   <div class="live-guest-requests" id="liveGuestRequests"></div>
   <div class="live-comments" id="liveComments"></div>
   <div class="gift-bar" id="giftBar">
@@ -3847,6 +3869,11 @@ let isSwitchingCam = false;
 const liveJoinReqBtn = document.getElementById('liveJoinReqBtn');
 const liveGuestReqBtn = document.getElementById('liveGuestReqBtn');
 const liveGuestRequestsPanel = document.getElementById('liveGuestRequests');
+const liveShareBtn = document.getElementById('liveShareBtn');
+const liveLikeCount = document.getElementById('liveLikeCount');
+const liveHeartLayer = document.getElementById('liveHeartLayer');
+let unsubscribeLiveLikes = null;
+let lastLiveTapTime = 0;
 
 let currentLiveChannel = null;
 let currentLiveHostUid = null;
@@ -3927,6 +3954,58 @@ function listenLiveComments(channelName){
     });
   });
 }
+
+function listenLiveLikes(hostUid){
+  if(unsubscribeLiveLikes){ unsubscribeLiveLikes(); unsubscribeLiveLikes = null; }
+  liveLikeCount.textContent = '❤️ 0';
+  if(!hostUid) return;
+  unsubscribeLiveLikes = onSnapshot(doc(db, "liveStreams", hostUid), (snap)=>{
+    const n = snap.exists() ? (snap.data().likes || 0) : 0;
+    liveLikeCount.textContent = `❤️ ${n}`;
+  });
+}
+
+function spawnLiveHeart(x){
+  const heart = document.createElement('div');
+  heart.className = 'live-heart-float';
+  heart.textContent = '❤️';
+  heart.style.left = `${x}px`;
+  liveHeartLayer.appendChild(heart);
+  setTimeout(()=>{ heart.remove(); }, 1700);
+}
+
+async function incrementLiveLike(){
+  if(!currentLiveHostUid) return;
+  try{ await updateDoc(doc(db, "liveStreams", currentLiveHostUid), { likes: increment(1) }); } catch(err){}
+}
+
+liveGrid.addEventListener('click', (e)=>{
+  if(!currentLiveChannel) return;
+  const now = Date.now();
+  const rect = liveGrid.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  if(now - lastLiveTapTime < 350){
+    spawnLiveHeart(x - 20);
+    incrementLiveLike();
+  }
+  lastLiveTapTime = now;
+});
+
+liveShareBtn.addEventListener('click', async ()=>{
+  if(!currentLiveHostUid) return;
+  const shareUrl = `${location.origin}${location.pathname}?live=${currentLiveHostUid}`;
+  const shareTitle = liveViewerName.textContent ? `${liveViewerName.textContent} - Yechalal Shop ላይቭ` : 'Yechalal Shop ላይቭ';
+  try{
+    if(navigator.share){
+      await navigator.share({ title: shareTitle, url: shareUrl });
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      const original = liveShareBtn.textContent;
+      liveShareBtn.textContent = '✅';
+      setTimeout(()=>{ liveShareBtn.textContent = original; }, 1500);
+    }
+  } catch(err){ /* user cancelled share sheet or clipboard denied */ }
+});
 
 async function sendLiveComment(){
   const text = liveCommentInput.value.trim();
@@ -4136,6 +4215,7 @@ liveStartSubmit.addEventListener('click', async ()=>{
     listenLiveComments(pendingLiveChannel);
     listenLiveGuests(pendingLiveChannel, currentUser.uid);
     listenGuestRequests(pendingLiveChannel);
+    listenLiveLikes(currentUser.uid);
     liveStartModal.classList.remove('open');
     liveViewer.classList.add('open');
   } catch(err){
@@ -4165,6 +4245,7 @@ async function joinAsViewer(channelName, token, hostName, hostUid, hostAgoraUid)
     liveViewer.classList.add('open');
     listenLiveComments(channelName);
     listenLiveGuests(channelName, hostUid);
+    listenLiveLikes(hostUid);
     await agoraClient.setClientRole('audience');
     myAgoraUid = await agoraClient.join(AGORA_APP_ID, channelName, token, null);
   } catch(err){
@@ -4193,6 +4274,7 @@ async function leaveLive(){
   if(unsubscribeLiveGuests){ unsubscribeLiveGuests(); unsubscribeLiveGuests = null; }
   if(unsubscribeGuestRequests){ unsubscribeGuestRequests(); unsubscribeGuestRequests = null; }
   if(unsubscribeMyGuestRequest){ unsubscribeMyGuestRequest(); unsubscribeMyGuestRequest = null; }
+  if(unsubscribeLiveLikes){ unsubscribeLiveLikes(); unsubscribeLiveLikes = null; }
   liveComments.innerHTML = '';
   liveCommentInput.value = '';
   liveGuestRequestsPanel.innerHTML = '';
@@ -4381,9 +4463,21 @@ onSnapshot(sq, (snap)=>{
   });
 });
 
+let liveDeepLinkHandled = false;
 const lq = query(collection(db, "liveStreams"), where("active", "==", true));
 onSnapshot(lq, (snap)=>{
   const lives = snap.docs.map(d => d.data());
+  if(!liveDeepLinkHandled){
+    const liveUid = new URLSearchParams(location.search).get('live');
+    if(liveUid){
+      const l = lives.find(x => x.uid === liveUid);
+      if(l){
+        liveDeepLinkHandled = true;
+        history.replaceState(null, '', location.pathname);
+        joinAsViewer(l.channelName, l.token, l.shop || 'ሻጭ', l.uid, l.hostAgoraUid);
+      }
+    }
+  }
   if(lives.length === 0){
     liveStrip.classList.add('hidden');
     liveStrip.innerHTML = '';
@@ -4419,6 +4513,7 @@ onSnapshot(lq, (snap)=>{
         listenLiveComments(l.channelName);
         listenLiveGuests(l.channelName, l.uid);
         listenGuestRequests(l.channelName);
+        listenLiveLikes(l.uid);
         return;
       }
       joinAsViewer(l.channelName, l.token, l.shop || 'ሻጭ', l.uid, l.hostAgoraUid);
@@ -4672,4 +4767,4 @@ if('serviceWorker' in navigator){
 }
 </script>
 </body>
-</html>  
+</html>
