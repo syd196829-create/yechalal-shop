@@ -2251,7 +2251,7 @@ function startVideoRecording(){
     recSeconds++;
     const m = Math.floor(recSeconds/60), s = recSeconds%60;
     camRecTimer.textContent = `🔴 ${m}:${s.toString().padStart(2,'0')}`;
-    if(recSeconds >= 30) stopVideoRecording(false); // 30s max
+    if(recSeconds >= 300) stopVideoRecording(false); // 5 min max
   }, 1000);
 }
 function stopVideoRecording(cancel){
@@ -2446,7 +2446,7 @@ let activeCategory = "ሁሉም";
 let currentView = "feed";
 let feedFilterMode = "forYou"; // 'forYou' or 'following'
 
-const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(60));
+const q = query(collection(db, "products"), orderBy("createdAt", "desc"), limit(200));
 onSnapshot(q, (snap)=>{
   allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   renderMarket();
@@ -3461,6 +3461,15 @@ function openProfileModal(sellerUid, sellerName){
   renderProfileGrid(sellerProducts);
   renderProfileStories(sellerUid);
   refreshProfileFollowBtn();
+  // Own products can fall out of the global recent-feed window as more posts come in —
+  // fetch this seller's products directly so their profile grid is always complete.
+  getDocs(query(collection(db, "products"), where("uid", "==", sellerUid))).then(snap=>{
+    if(currentProfileUid !== sellerUid) return;
+    const ownProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b)=> (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    profileLikesCount.textContent = formatCount(ownProducts.reduce((sum,p)=> sum + (p.likeCount||0), 0));
+    renderProfileGrid(ownProducts);
+  }).catch(()=>{});
 
   if(profileUnsubFollowers) profileUnsubFollowers();
   const fq = query(collection(db, "follows"), where("sellerUid", "==", sellerUid));
