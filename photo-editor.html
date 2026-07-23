@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ፎቶ አርትዕ - Yechalal Shop</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #121214;
+    --panel: #1c1c20;
+    --panel-2: #26262c;
+    --accent: #f0a940;
+    --accent-dim: #7a5a25;
+    --text: #ededf0;
+    --text-dim: #8b8b93;
+    --danger: #e5484d;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%; background:var(--bg); color:var(--text);
+    font-family:'Inter','Noto Sans Ethiopic',sans-serif;
+    overscroll-behavior:none; user-select:none;
+  }
+  .am{font-family:'Noto Sans Ethiopic','Inter',sans-serif;}
+
+  #app{
+    display:flex; flex-direction:column; height:100vh; height:100dvh; width:100vw;
+  }
+
+  /* ---------- TOP BAR ---------- */
+  #topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; background:var(--panel);
+    border-bottom:1px solid #000;
+  }
+  #topbar button{
+    background:none; border:none; color:var(--text); font-size:15px; font-weight:600;
+    padding:8px 14px; border-radius:10px;
+  }
+  #topbar .cancel{color:var(--text-dim);}
+  #topbar .save{background:var(--accent); color:#1a1204;}
+  #topbar .title{font-size:14px; color:var(--text-dim);}
+
+  /* ---------- CANVAS STAGE ---------- */
+  #stage{
+    flex:1; position:relative; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; background:
+      repeating-conic-gradient(#1a1a1e 0% 25%, #151518 0% 50%) 50% / 24px 24px;
+  }
+  #canvas-wrap{ position:relative; }
+
+  #upload-hint{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; color:var(--text-dim); text-align:center; padding:24px;
+  }
+  #upload-hint .icon-circle{
+    width:64px; height:64px; border-radius:50%; border:2px dashed var(--accent-dim);
+    display:flex; align-items:center; justify-content:center; font-size:28px;
+  }
+  #upload-hint button{
+    background:var(--accent); color:#1a1204; border:none; font-weight:700;
+    padding:12px 28px; border-radius:999px; font-size:15px;
+  }
+
+  /* crop overlay */
+  .crop-mask{ position:absolute; background:rgba(0,0,0,.55); pointer-events:none; }
+
+  /* ---------- CONTEXT ACTION BAR (appears above tool tray when an object is selected) ---------- */
+  #obj-bar{
+    display:none; gap:10px; padding:8px 16px; background:var(--panel-2);
+    align-items:center; justify-content:center;
+  }
+  #obj-bar.show{display:flex;}
+  #obj-bar button{
+    background:var(--panel); border:1px solid #333; color:var(--text);
+    width:40px; height:40px; border-radius:50%; font-size:16px;
+  }
+  #obj-bar button.del{color:var(--danger); border-color:#4a2323;}
+
+  /* ---------- TOOL PANELS (sliders / pickers) ---------- */
+  #tool-panel{
+    display:none; padding:14px 16px 6px; background:var(--panel);
+    border-top:1px solid #000;
+  }
+  #tool-panel.show{display:block;}
+  .slider-row{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .slider-row label{ width:78px; font-size:13px; color:var(--text-dim); }
+  .slider-row input[type=range]{
+    flex:1; accent-color:var(--accent);
+  }
+  .chip-row{ display:flex; gap:10px; overflow-x:auto; padding:4px 0 8px; }
+  .chip-row::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto; padding:9px 16px; border-radius:999px; background:var(--panel-2);
+    border:1px solid #333; color:var(--text); font-size:13px; white-space:nowrap;
+  }
+  .chip.active{ background:var(--accent); color:#1a1204; border-color:var(--accent); font-weight:700; }
+
+  .sticker-grid{
+    display:grid; grid-template-columns:repeat(7,1fr); gap:6px; padding:6px 0 10px; max-height:120px; overflow-y:auto;
+  }
+  .sticker-grid button{
+    background:var(--panel-2); border:1px solid #2c2c33; border-radius:10px;
+    font-size:22px; padding:6px 0;
+  }
+
+  .crop-ratio-row{ display:flex; gap:10px; justify-content:center; padding:6px 0 10px; }
+
+  #text-input-row{ display:flex; gap:10px; padding:4px 0 10px; }
+  #text-input-row input[type=text]{
+    flex:1; background:var(--panel-2); border:1px solid #333; color:var(--text);
+    border-radius:10px; padding:10px 12px; font-size:15px;
+  }
+  #text-input-row button{
+    background:var(--accent); color:#1a1204; border:none; border-radius:10px; padding:0 16px; font-weight:700;
+  }
+  .swatch-row{ display:flex; gap:8px; padding:4px 0 10px; flex-wrap:wrap; }
+  .swatch{ width:26px; height:26px; border-radius:50%; border:2px solid #444; }
+  .swatch.sel{ border-color:var(--accent); }
+
+  /* ---------- BOTTOM TOOL TRAY ---------- */
+  #tray{
+    display:flex; background:var(--panel); border-top:1px solid #000;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tray-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+    background:none; border:none; color:var(--text-dim); padding:8px 2px; font-size:11px;
+    border-radius:10px;
+  }
+  .tray-btn .ic{ font-size:19px; }
+  .tray-btn.active{ color:var(--accent); }
+  .tray-btn.active .ic{
+    filter: drop-shadow(0 0 6px rgba(240,169,64,.5));
+  }
+
+  input[type=file]{ display:none; }
+
+  #hidden-canvas{ display:none; }
+
+  /* Fabric control styling tweak for touch */
+  .canvas-container{ touch-action:none; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <button class="cancel" id="btn-cancel">ይቅር</button>
+    <div class="title am" id="mode-title">ፎቶ አርትዕ</div>
+    <button class="save" id="btn-save">አስቀምጥ</button>
+  </div>
+
+  <div id="stage">
+    <div id="upload-hint">
+      <div class="icon-circle">📷</div>
+      <div class="am" style="font-size:15px;">ፎቶ ይምረጡ ወይም ፎቶ ያንሱ</div>
+      <button id="btn-pick" class="am">ፎቶ ይምረጡ</button>
+      <input type="file" id="file-input" accept="image/*">
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="c"></canvas>
+    </div>
+  </div>
+
+  <div id="obj-bar">
+    <button id="obj-back" title="ወደኋላ">◀</button>
+    <button id="obj-front" title="ወደፊት">▶</button>
+    <button id="obj-dup" title="ቅዳ">⧉</button>
+    <button id="obj-del" class="del" title="ሰርዝ">🗑</button>
+  </div>
+
+  <!-- CROP PANEL -->
+  <div id="panel-crop" class="tool-panel">
+    <div class="crop-ratio-row">
+      <button class="chip active" data-ratio="free">ነጻ</button>
+      <button class="chip" data-ratio="1">1:1</button>
+      <button class="chip" data-ratio="0.8">4:5</button>
+      <button class="chip" data-ratio="1.777">16:9</button>
+      <button class="chip" data-ratio="0.5625">9:16</button>
+    </div>
+  </div>
+
+  <!-- ROTATE PANEL -->
+  <div id="panel-rotate" class="tool-panel">
+    <div class="chip-row" style="justify-content:center;">
+      <button class="chip am" id="rot-left">↺ 90°</button>
+      <button class="chip am" id="rot-right">↻ 90°</button>
+      <button class="chip am" id="rot-flip-h">⇋ አግድም</button>
+      <button class="chip am" id="rot-flip-v">⇕ ቁልቁል</button>
+    </div>
+    <div class="slider-row">
+      <label class="am">ትክክለኛ ማዞሪያ</label>
+      <input type="range" id="rot-fine" min="-45" max="45" value="0">
+    </div>
+  </div>
+
+  <!-- FILTER PANEL -->
+  <div id="panel-filter" class="tool-panel">
+    <div class="chip-row" id="filter-presets">
+      <button class="chip active am" data-f="none">መደበኛ</button>
+      <button class="chip am" data-f="grayscale">ጥቁርና ነጭ</button>
+      <button class="chip am" data-f="sepia">ሴፒያ</button>
+      <button class="chip am" data-f="vintage">ቪንቴጅ</button>
+      <button class="chip am" data-f="cool">ቀዝቃዛ</button>
+      <button class="chip am" data-f="warm">ሙቅ</button>
+    </div>
+    <div class="slider-row">
+      <label class="am">ብሩህነት</label>
+      <input type="range" id="f-bright" min="-100" max="100" value="0">
+    </div>
+    <div class="slider-row">
+      <label class="am">ንፅፅር</label>
+      <input type="range" id="f-contrast" min="-100" max="100" value="0">
+    </div>
+    <div class="slider-row">
+      <label class="am">ቀለም ጥግግት</label>
+      <input type="range" id="f-sat" min="-100" max="100" value="0">
+    </div>
+  </div>
+
+  <!-- TEXT PANEL -->
+  <div id="panel-text" class="tool-panel">
+    <div id="text-input-row">
+      <input type="text" id="text-value" placeholder="ጽሑፍ ይጻፉ..." class="am">
+      <button id="text-add" class="am">ጨምር</button>
+    </div>
+    <div class="swatch-row" id="text-colors"></div>
+    <div class="slider-row">
+      <label class="am">የፊደል መጠን</label>
+      <input type="range" id="text-size" min="16" max="120" value="42">
+    </div>
+  </div>
+
+  <!-- STICKER PANEL -->
+  <div id="panel-sticker" class="tool-panel">
+    <div class="sticker-grid" id="sticker-grid"></div>
+  </div>
+
+  <div id="tray">
+    <button class="tray-btn" data-tool="crop"><span class="ic">⛶</span><span class="am">ቁረጥ</span></button>
+    <button class="tray-btn" data-tool="rotate"><span class="ic">↻</span><span class="am">አዙር</span></button>
+    <button class="tray-btn" data-tool="filter"><span class="ic">◑</span><span class="am">ማጣሪያ</span></button>
+    <button class="tray-btn" data-tool="text"><span class="ic">Aa</span><span class="am">ጽሑፍ</span></button>
+    <button class="tray-btn" data-tool="sticker"><span class="ic">😊</span><span class="am">ስቲከር</span></button>
+  </div>
+
+</div>
+
+<canvas id="hidden-canvas"></canvas>
+
+<script>
+/* ============================================================
+   YECHALAL SHOP — PHOTO EDITOR MODULE
+   Self-contained. Integration point: window.YechalalPhotoEditor
+   ============================================================ */
+
+const canvasEl = document.getElementById('c');
+let canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
+let baseImage = null;          // the fabric.Image the user is editing
+let stageMaxW = 0, stageMaxH = 0;
+let cropRect = null;           // active crop overlay rectangle
+let cropMode = false;
+let currentTool = null;
+
+const stage = document.getElementById('stage');
+const uploadHint = document.getElementById('upload-hint');
+
+function fitStage(){
+  const rect = stage.getBoundingClientRect();
+  stageMaxW = rect.width - 24;
+  stageMaxH = rect.height - 24;
+}
+window.addEventListener('resize', fitStage);
+fitStage();
+
+/* ---------------- LOAD IMAGE ---------------- */
+document.getElementById('btn-pick').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+document.getElementById('file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => loadImageFromDataUrl(ev.target.result);
+  reader.readAsDataURL(file);
+});
+
+function loadImageFromDataUrl(dataUrl){
+  fabric.Image.fromURL(dataUrl, (img) => {
+    uploadHint.style.display = 'none';
+
+    const scale = Math.min(stageMaxW / img.width, stageMaxH / img.height, 1);
+    canvas.setWidth(img.width * scale);
+    canvas.setHeight(img.height * scale);
+    canvasEl.parentElement.style.width = (img.width*scale)+'px';
+
+    img.set({
+      left:0, top:0, scaleX:scale, scaleY:scale,
+      selectable:false, evented:false, hasControls:false
+    });
+    canvas.setBackgroundImage(null);
+    canvas.clear();
+    canvas.add(img);
+    canvas.sendToBack(img);
+    baseImage = img;
+    canvas.renderAll();
+  }, { crossOrigin:'anonymous' });
+}
+
+/* Allow pre-loading an existing photo (e.g. re-editing) from outside */
+window.YechalalPhotoEditor = {
+  loadFromDataUrl: loadImageFromDataUrl,
+  onSave: null,   // caller sets: function(dataUrl){ ... upload to Cloudinary ... }
+  onCancel: null
+};
+
+/* ---------------- TOOL TRAY SWITCHING ---------------- */
+const trayBtns = document.querySelectorAll('.tray-btn');
+const panels = {
+  crop: document.getElementById('panel-crop'),
+  rotate: document.getElementById('panel-rotate'),
+  filter: document.getElementById('panel-filter'),
+  text: document.getElementById('panel-text'),
+  sticker: document.getElementById('panel-sticker'),
+};
+
+trayBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tool = btn.dataset.tool;
+    if(currentTool === tool){
+      closeTool();
+      return;
+    }
+    openTool(tool);
+  });
+});
+
+function openTool(tool){
+  closeTool();
+  currentTool = tool;
+  trayBtns.forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+  panels[tool].classList.add('show');
+  if(tool === 'crop') enterCropMode();
+}
+
+function closeTool(){
+  if(currentTool === 'crop') exitCropMode(false);
+  trayBtns.forEach(b => b.classList.remove('active'));
+  Object.values(panels).forEach(p => p.classList.remove('show'));
+  currentTool = null;
+}
+
+/* ---------------- CROP ---------------- */
+let cropRatio = 'free';
+
+document.querySelectorAll('#panel-crop .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#panel-crop .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    cropRatio = chip.dataset.ratio;
+    if(cropRect) positionDefaultCropRect();
+  });
+});
+
+function enterCropMode(){
+  if(!baseImage) return;
+  cropMode = true;
+  const w = canvas.getWidth(), h = canvas.getHeight();
+  cropRect = new fabric.Rect({
+    left: w*0.1, top: h*0.1, width: w*0.8, height: h*0.8,
+    fill: 'rgba(240,169,64,0.08)',
+    stroke: '#f0a940', strokeWidth: 2, strokeDashArray:[6,4],
+    cornerColor:'#f0a940', cornerStyle:'circle', transparentCorners:false,
+    cornerSize: 16, lockRotation:true,
+  });
+  cropRect.setControlsVisibility({ mtr:false });
+  if(cropRatio !== 'free'){
+    cropRect.set({ height: cropRect.width / parseFloat(cropRatio) });
+    lockRatio(cropRect, parseFloat(cropRatio));
+  }
+  canvas.add(cropRect);
+  canvas.setActiveObject(cropRect);
+  canvas.renderAll();
+}
+
+function positionDefaultCropRect(){
+  if(!cropRect) return;
+  if(cropRatio === 'free'){
+    cropRect.off('scaling');
+  } else {
+    lockRatio(cropRect, parseFloat(cropRatio));
+    cropRect.set({ height: cropRect.width / parseFloat(cropRatio) });
+  }
+  canvas.renderAll();
+}
+
+function lockRatio(rect, ratio){
+  rect.off('scaling');
+  rect.on('scaling', function(){
+    rect.set({ height: rect.getScaledWidth() / ratio / rect.scaleY * rect.scaleY });
+    rect.set({ height: rect.width * rect.scaleX / ratio / rect.scaleY });
+  });
+}
+
+function exitCropMode(apply){
+  if(apply && cropRect && baseImage){
+    applyCrop();
+  }
+  if(cropRect){ canvas.remove(cropRect); cropRect = null; }
+  cropMode = false;
+  canvas.renderAll();
+}
+
+function applyCrop(){
+  const r = cropRect;
+  const zoom = 1; // canvas isn't zoomed independently here
+  const cropX = r.left, cropY = r.top;
+  const cropW = r.getScaledWidth(), cropH = r.getScaledHeight();
+
+  // Render current canvas (image + overlays below crop) to an offscreen canvas, then crop
+  cropRect.set({ opacity:0 }); // hide the crop UI itself during export
+  canvas.renderAll();
+  const dataUrl = canvas.toDataURL({
+    left: cropX, top: cropY, width: cropW, height: cropH,
+    format:'png'
+  });
+  cropRect.set({ opacity:1 });
+
+  // Reload cropped result as the new base image, preserving overlays would be complex,
+  // so we flatten: crop applies to the whole composition (image + text/stickers) at once.
+  fabric.Image.fromURL(dataUrl, (img) => {
+    const scale = Math.min(stageMaxW / img.width, stageMaxH / img.height, 1);
+    canvas.setWidth(img.width * scale);
+    canvas.setHeight(img.height * scale);
+    canvasEl.parentElement.style.width = (img.width*scale)+'px';
+    img.set({ left:0, top:0, scaleX:scale, scaleY:scale, selectable:false, evented:false, hasControls:false });
+    canvas.clear();
+    canvas.add(img);
+    baseImage = img;
+    canvas.renderAll();
+  });
+}
+
+/* "Apply crop" happens when leaving crop tool via another tray button or Save */
+document.getElementById('btn-save').addEventListener('click', () => {
+  if(currentTool === 'crop') exitCropMode(true);
+  finalizeAndSave();
+});
+document.getElementById('btn-cancel').addEventListener('click', () => {
+  if(window.YechalalPhotoEditor.onCancel) window.YechalalPhotoEditor.onCancel();
+});
+
+/* ---------------- ROTATE ---------------- */
+document.getElementById('rot-left').addEventListener('click', () => rotateBase(-90));
+document.getElementById('rot-right').addEventListener('click', () => rotateBase(90));
+document.getElementById('rot-flip-h').addEventListener('click', () => { if(baseImage){ baseImage.set('flipX', !baseImage.flipX); canvas.renderAll(); }});
+document.getElementById('rot-flip-v').addEventListener('click', () => { if(baseImage){ baseImage.set('flipY', !baseImage.flipY); canvas.renderAll(); }});
+document.getElementById('rot-fine').addEventListener('input', (e) => {
+  if(!baseImage) return;
+  baseImage.set('angle', parseFloat(e.target.value));
+  canvas.renderAll();
+});
+
+function rotateBase(deg){
+  if(!baseImage) return;
+  const newAngle = (baseImage.angle || 0) + deg;
+  baseImage.set('angle', newAngle);
+  // swap canvas dimensions on 90/270 for a clean fit
+  canvas.renderAll();
+}
+
+/* ---------------- FILTERS ---------------- */
+const filterPresets = {
+  none: [],
+  grayscale: [new fabric.Image.filters.Grayscale()],
+  sepia: [new fabric.Image.filters.Sepia()],
+  vintage: [
+    new fabric.Image.filters.Sepia(),
+    new fabric.Image.filters.Contrast({ contrast: -0.1 }),
+    new fabric.Image.filters.Brightness({ brightness: 0.03 })
+  ],
+  cool: [new fabric.Image.filters.HueRotation({ rotation: 0.15 })],
+  warm: [new fabric.Image.filters.HueRotation({ rotation: -0.08 })]
+};
+
+let activePreset = 'none';
+let sliderFilters = { brightness:0, contrast:0, saturation:0 };
+
+document.querySelectorAll('#filter-presets .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#filter-presets .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activePreset = chip.dataset.f;
+    applyFilters();
+  });
+});
+
+['f-bright','f-contrast','f-sat'].forEach(id => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    if(id==='f-bright') sliderFilters.brightness = parseFloat(e.target.value)/100;
+    if(id==='f-contrast') sliderFilters.contrast = parseFloat(e.target.value)/100;
+    if(id==='f-sat') sliderFilters.saturation = parseFloat(e.target.value)/100;
+    applyFilters();
+  });
+});
+
+function applyFilters(){
+  if(!baseImage) return;
+  const filters = [...(filterPresets[activePreset]||[])];
+  if(sliderFilters.brightness) filters.push(new fabric.Image.filters.Brightness({ brightness: sliderFilters.brightness }));
+  if(sliderFilters.contrast) filters.push(new fabric.Image.filters.Contrast({ contrast: sliderFilters.contrast }));
+  if(sliderFilters.saturation) filters.push(new fabric.Image.filters.Saturation({ saturation: sliderFilters.saturation }));
+  baseImage.filters = filters;
+  baseImage.applyFilters();
+  canvas.renderAll();
+}
+
+/* ---------------- TEXT ---------------- */
+const textColors = ['#ffffff','#000000','#f0a940','#e5484d','#3ba55c','#4a90e2','#c162de'];
+const textColorsRow = document.getElementById('text-colors');
+let selectedTextColor = '#ffffff';
+textColors.forEach((c,i) => {
+  const sw = document.createElement('div');
+  sw.className = 'swatch' + (i===0?' sel':'');
+  sw.style.background = c;
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+    sw.classList.add('sel');
+    selectedTextColor = c;
+    const active = canvas.getActiveObject();
+    if(active && active.type === 'i-text'){ active.set('fill', c); canvas.renderAll(); }
+  });
+  textColorsRow.appendChild(sw);
+});
+
+document.getElementById('text-add').addEventListener('click', () => {
+  const val = document.getElementById('text-value').value.trim();
+  if(!val) return;
+  const size = parseInt(document.getElementById('text-size').value, 10);
+  const t = new fabric.IText(val, {
+    left: canvas.getWidth()/2, top: canvas.getHeight()/2,
+    originX:'center', originY:'center',
+    fontSize: size, fill: selectedTextColor,
+    fontFamily: "'Noto Sans Ethiopic','Inter',sans-serif",
+    stroke:'rgba(0,0,0,0.25)', strokeWidth:1,
+  });
+  canvas.add(t);
+  canvas.setActiveObject(t);
+  canvas.renderAll();
+  document.getElementById('text-value').value = '';
+});
+
+document.getElementById('text-size').addEventListener('input', (e) => {
+  const active = canvas.getActiveObject();
+  if(active && active.type === 'i-text'){ active.set('fontSize', parseInt(e.target.value,10)); canvas.renderAll(); }
+});
+
+/* ---------------- STICKERS ---------------- */
+const stickers = ['😀','😍','🔥','❤️','👍','🎉','⭐','✅','😂','😢','👏','🙏','💯','😎','🥳','💰','🛍️','📦','🚚','✨','😮','👋','🤝','🇪🇹'];
+const stickerGrid = document.getElementById('sticker-grid');
+stickers.forEach(s => {
+  const b = document.createElement('button');
+  b.textContent = s;
+  b.addEventListener('click', () => {
+    const t = new fabric.IText(s, {
+      left: canvas.getWidth()/2, top: canvas.getHeight()/2,
+      originX:'center', originY:'center', fontSize:64,
+      editable:false,
+    });
+    canvas.add(t);
+    canvas.setActiveObject(t);
+    canvas.renderAll();
+  });
+  stickerGrid.appendChild(b);
+});
+
+/* ---------------- SELECTED OBJECT ACTIONS ---------------- */
+const objBar = document.getElementById('obj-bar');
+canvas.on('selection:created', updateObjBar);
+canvas.on('selection:updated', updateObjBar);
+canvas.on('selection:cleared', () => objBar.classList.remove('show'));
+
+function updateObjBar(){
+  const active = canvas.getActiveObject();
+  if(active && active !== baseImage && active !== cropRect){
+    objBar.classList.add('show');
+  } else {
+    objBar.classList.remove('show');
+  }
+}
+
+document.getElementById('obj-del').addEventListener('click', () => {
+  const a = canvas.getActiveObject();
+  if(a){ canvas.remove(a); objBar.classList.remove('show'); }
+});
+document.getElementById('obj-dup').addEventListener('click', () => {
+  const a = canvas.getActiveObject();
+  if(!a) return;
+  a.clone((clone) => {
+    clone.set({ left: a.left+20, top: a.top+20 });
+    canvas.add(clone);
+    canvas.setActiveObject(clone);
+    canvas.renderAll();
+  });
+});
+document.getElementById('obj-front').addEventListener('click', () => {
+  const a = canvas.getActiveObject(); if(a) canvas.bringForward(a);
+});
+document.getElementById('obj-back').addEventListener('click', () => {
+  const a = canvas.getActiveObject(); if(a) canvas.sendBackwards(a);
+});
+
+/* ---------------- SAVE / EXPORT ---------------- */
+function finalizeAndSave(){
+  if(!baseImage){ if(window.YechalalPhotoEditor.onCancel) window.YechalalPhotoEditor.onCancel(); return; }
+  canvas.discardActiveObject();
+  canvas.renderAll();
+  const dataUrl = canvas.toDataURL({ format:'jpeg', quality:0.92, multiplier:1 });
+  if(window.YechalalPhotoEditor.onSave){
+    window.YechalalPhotoEditor.onSave(dataUrl);
+  } else {
+    // Fallback demo behavior: open the result in a new tab
+    const w = window.open();
+    w.document.write('<img src="'+dataUrl+'" style="max-width:100%">');
+  }
+}
+</script>
+</body>
+</html>
