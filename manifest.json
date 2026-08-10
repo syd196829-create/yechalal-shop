@@ -1,0 +1,36 @@
+{
+  "name": "Yechalal Shop",
+  "short_name": "Yechalal",
+  "description": "Yechalal Shop — Ethiopia's first video marketplace: Watch videos, buy, sell",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0E0C",
+  "theme_color": "#0B0E0C",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
