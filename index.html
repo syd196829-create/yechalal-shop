@@ -645,6 +645,41 @@
     box-shadow:0 -8px 30px rgba(0,0,0,.28);
   }
   .live-bottom-sheet.open{ transform:translateY(0); }
+
+  /* ---------- FEED / PEOPLE VIDEOS: Facebook-style More menu ---------- */
+  /* This menu belongs to the normal video feed, not the LIVE viewer. */
+  #feedMoreBackdrop{
+    position:fixed !important;
+    inset:0 !important;
+    z-index:399 !important;
+    background:rgba(0,0,0,.42) !important;
+  }
+  #feedMoreMenu{
+    position:fixed !important;
+    left:50% !important;
+    right:auto !important;
+    bottom:0 !important;
+    width:100% !important;
+    max-width:620px !important;
+    height:auto !important;
+    max-height:72svh !important;
+    overflow-y:auto !important;
+    transform:translate(-50%,100%) !important;
+    z-index:400 !important;
+    border-radius:22px 22px 0 0 !important;
+    padding:10px 8px calc(16px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  #feedMoreMenu.open{
+    transform:translate(-50%,0) !important;
+  }
+  #feedMoreMenu .fm-group{
+    margin-bottom:8px;
+  }
+  #feedMoreMenu .fm-row{
+    min-height:58px;
+    padding:12px 16px;
+  }
+
   .live-sheet-handle{
     width:38px; height:4px; border-radius:4px; background:#b9b9b9; margin:2px auto 12px;
   }
@@ -2756,8 +2791,9 @@ try{
 </div>
 
 <!-- LIVE VIEWER / BROADCAST OVERLAY -->
-<div class="live-sheet-backdrop" id="feedMoreBackdrop"></div>
-<div class="live-bottom-sheet" id="feedMoreMenu" style="z-index:400;">
+<!-- Facebook-style menu for the normal people/video feed -->
+<div class="live-sheet-backdrop" id="feedMoreBackdrop" aria-hidden="true"></div>
+<div class="live-bottom-sheet" id="feedMoreMenu" aria-label="Video options">
   <div class="live-sheet-handle"></div>
   <div class="fm-group">
     <button class="fm-row" data-fm-action="interested"><span class="fm-icon">➕</span><div><b>Interested</b><p>More of your posts will be like this.</p></div></button>
@@ -12514,6 +12550,39 @@ setInterval(()=>{
   width:28vw!important; max-width:150px!important; height:38vw!important; max-height:210px!important;
   min-width:96px!important; min-height:140px!important; border-radius:14px!important; z-index:20!important;
 }
+
+  /* Media display fix: show the whole uploaded photo/video without zoom/cropping. */
+  .feed-card img,
+  .feed-card iframe,
+  .feed-card video{
+    object-fit:contain !important;
+    object-position:center center !important;
+    background:#000;
+  }
+  .p-card .p-media iframe,
+  .p-card .p-media img,
+  .p-card .p-media video{
+    object-fit:contain !important;
+    object-position:center center !important;
+    background:#000;
+  }
+  .upload-preview iframe,
+  .upload-preview img{
+    object-fit:contain !important;
+    object-position:center center !important;
+    background:#000;
+  }
+  .post-card-photo{
+    background:#000;
+  }
+  .post-card-photo img{
+    width:100%;
+    height:auto;
+    max-height:75vh;
+    object-fit:contain !important;
+    object-position:center center;
+    background:#000;
+  }
 </style>
 
 
