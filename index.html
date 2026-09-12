@@ -510,12 +510,14 @@
   .live-steps b{color:var(--cream);}
 
   .live-viewer{
+    --yc-theme-a: 232,178,61;
+    --yc-theme-b: 138,109,31;
     position:fixed; inset:0; z-index:250; display:none; overflow:hidden;
     background:
-      radial-gradient(circle at 18% 22%, rgba(232,178,61,.30), transparent 42%),
-      radial-gradient(circle at 82% 28%, rgba(232,178,61,.20), transparent 46%),
-      radial-gradient(circle at 50% 85%, rgba(232,178,61,.16), transparent 52%),
-      linear-gradient(135deg, #1a1509, #0b0904 40%, #1a1509 70%, #0b0904);
+      radial-gradient(circle at 18% 22%, rgba(var(--yc-theme-a),.30), transparent 42%),
+      radial-gradient(circle at 82% 28%, rgba(var(--yc-theme-a),.20), transparent 46%),
+      radial-gradient(circle at 50% 85%, rgba(var(--yc-theme-a),.16), transparent 52%),
+      linear-gradient(135deg, #17140f, #0a0906 40%, #17140f 70%, #0a0906);
     background-size:220% 220%, 220% 220%, 220% 220%, 320% 320%;
     animation: yc-live-shimmer 14s ease-in-out infinite;
   }
@@ -3321,6 +3323,13 @@ try{
 
       <div class="yc-gs-divider"></div>
 
+      <div class="yc-gs-section-title">
+        <strong>Room Color</strong>
+      </div>
+      <div class="yc-theme-scroller" id="ycRoomThemeScroller" style="display:flex; gap:14px; overflow-x:auto; padding:4px 2px 10px;"></div>
+
+      <div class="yc-gs-divider"></div>
+
       <div class="yc-gs-row">
         <div>
           <strong>Show available spots</strong>
@@ -4294,12 +4303,6 @@ try{
 
 <!-- COMMUNITY TEXT POSTS -->
 <section id="textPosts">
-  <div class="market-head">
-    <div>
-      <div class="eyebrow en" style="text-align:left;">Community</div>
-      <h2>Thoughts & Updates</h2>
-    </div>
-  </div>
   <div class="post-composer">
     <textarea id="postComposerInput" class="field-input" placeholder="What's on your mind?" maxlength="1000" rows="3" style="width:100%; resize:vertical;"></textarea>
     <div class="post-bg-picker" id="postBgPicker">
@@ -10398,9 +10401,11 @@ function listenLiveRoomLayout(channelName){
       const d = snap.data() || {};
       currentLiveRoomLayout = d.layout || 'full-screen';
       currentLiveShowAvailableSpots = d.showAvailableSpots !== false;
+      if(typeof window.ycApplyLiveRoomTheme === 'function') window.ycApplyLiveRoomTheme(d.theme || 'gold');
     } else {
       currentLiveRoomLayout = 'full-screen';
       currentLiveShowAvailableSpots = true;
+      if(typeof window.ycApplyLiveRoomTheme === 'function') window.ycApplyLiveRoomTheme('gold');
     }
     if(typeof window.ycApplyLiveRoomLayout === 'function') window.ycApplyLiveRoomLayout(currentLiveRoomLayout, currentLiveShowAvailableSpots);
   }, ()=>{});
@@ -10434,6 +10439,7 @@ function updateGridLayout(){
   if(n === 1) liveGrid.classList.add('tiles-1');
   else if(n === 2) liveGrid.classList.add('tiles-2');
   if(window.refreshSeatPlaceholders) window.refreshSeatPlaceholders();
+  if(window.reapplyGuestGridCoords) window.reapplyGuestGridCoords();
 }
 function ensureTile(uid, name, isHost){
   let tile = document.getElementById(tileId(uid));
@@ -13581,6 +13587,8 @@ setInterval(()=>{
 .yc-switch span{display:block;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18);transition:transform .18s;}
 .yc-switch.on{background:#25c7ed;}.yc-switch.on span{transform:translateX(24px);}
 .yc-gs-note{font-size:13px;color:#999;padding:12px 0 20px;}
+.yc-theme-swatch.active span{border-color:#fff!important; box-shadow:0 0 0 2px rgba(255,255,255,.35);}
+.yc-theme-swatch.active b{color:#fff;}
 /* Guest room layouts: only applied while this user is a guest. */
 /* TikTok-style "tucked-in" card look: every non-fullscreen layout gets a
    safe inset from the screen edges plus a real gap and rounded corners on
@@ -13588,13 +13596,13 @@ setInterval(()=>{
 #liveViewer[class*="yc-guest-layout-"]:not(.yc-guest-layout-full-screen) .live-grid{
   inset:56px 10px 100px 10px!important; border-radius:18px!important; overflow:hidden!important;
   gap:6px!important;
-  background:linear-gradient(160deg, rgba(138,109,31,.55), rgba(26,21,9,.4))!important;
+  background:linear-gradient(160deg, rgba(var(--yc-theme-b),.55), rgba(10,9,7,.4))!important;
 }
 #liveViewer[class*="yc-guest-layout-"]:not(.yc-guest-layout-full-screen) .live-tile{
   border-radius:14px!important; overflow:hidden!important;
 }
 .live-tile-placeholder{
-  background:rgba(232,178,61,.18)!important; border-style:solid!important; border-color:rgba(232,178,61,.45)!important;
+  background:rgba(var(--yc-theme-a),.18)!important; border-style:solid!important; border-color:rgba(var(--yc-theme-a),.45)!important;
   display:flex!important; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer!important;
 }
 .live-tile-placeholder .live-seat-plus{ font-size:1.5rem; color:#f4efe3; font-weight:300; line-height:1; }
@@ -13602,8 +13610,8 @@ setInterval(()=>{
 #liveViewer .live-grid:not(.tiles-1) .live-tile.lt-active{
   position:absolute!important; inset:9%!important; width:82%!important; height:82%!important;
   margin:auto!important; z-index:40!important; border-radius:16px!important;
-  border-color:rgba(232,178,61,.9)!important;
-  box-shadow:0 0 0 2px rgba(232,178,61,.9), 0 12px 30px rgba(0,0,0,.55)!important;
+  border-color:rgba(var(--yc-theme-a),.9)!important;
+  box-shadow:0 0 0 2px rgba(var(--yc-theme-a),.9), 0 12px 30px rgba(0,0,0,.55)!important;
 }
 #liveViewer.yc-guest-layout-fixed-grid .live-grid,
 #liveViewer.yc-guest-layout-roundtable-2 .live-grid{
@@ -13612,7 +13620,7 @@ setInterval(()=>{
   height:auto!important;
   grid-template-columns:repeat(3,1fr)!important; grid-template-rows:repeat(3,1fr)!important;
   gap:4px!important;
-  background:linear-gradient(160deg, rgba(138,109,31,.35), rgba(26,21,9,.25))!important;
+  background:linear-gradient(160deg, rgba(var(--yc-theme-b),.35), rgba(10,9,7,.25))!important;
 }
 #liveViewer.yc-guest-layout-fixed-grid .live-tile,
 #liveViewer.yc-guest-layout-roundtable-2 .live-tile{
@@ -13770,7 +13778,7 @@ setInterval(()=>{
   height:auto!important; max-height:none!important;
   grid-template-columns:repeat(4,1fr)!important; grid-auto-rows:170px!important;
   gap:6px!important; overflow-y:auto!important; align-content:start!important;
-  background:linear-gradient(160deg, rgba(138,109,31,.35), rgba(26,21,9,.25))!important;
+  background:linear-gradient(160deg, rgba(var(--yc-theme-b),.35), rgba(10,9,7,.25))!important;
   border-radius:18px!important; padding:10px 6px!important;
 }
 #liveViewer.yc-guest-layout-video-room-20 .live-tile,
@@ -13905,12 +13913,69 @@ setInterval(()=>{
   const showAll = document.getElementById('ycGuestLayoutShowAll');
   const scroller = document.getElementById('ycGuestLayoutScroller');
   const spots = document.getElementById('ycShowAvailableSpots');
+  const themeScroller = document.getElementById('ycRoomThemeScroller');
   if(!btn || !panel || !backdrop || !scroller) return;
 
   const localKey = 'ycGuestLiveLayout';
   const localSpotsKey = 'ycGuestShowAvailableSpots';
+  const localThemeKey = 'ycGuestLiveTheme';
   let layout = localStorage.getItem(localKey) || 'full-screen';
   let showAvailable = localStorage.getItem(localSpotsKey) !== '0';
+  let roomTheme = localStorage.getItem(localThemeKey) || 'gold';
+
+  const ROOM_THEMES = [
+    { id:'gold',   label:'Gold',            a:'232,178,61', b:'138,109,31' },
+    { id:'blue',   label:'Blue',            a:'61,140,232', b:'31,72,138'  },
+    { id:'green',  label:'Green',           a:'61,201,120', b:'27,110,63'  },
+    { id:'purple', label:'Purple',          a:'150,90,220', b:'80,45,130'  },
+    { id:'red',    label:'Red',             a:'224,60,60',  b:'120,25,25' },
+    { id:'teal',   label:'Teal',            a:'45,196,196', b:'20,100,100' },
+    { id:'pink',   label:'Pink',            a:'230,80,160', b:'130,35,90' },
+    { id:'orange', label:'Orange',          a:'232,140,50', b:'140,80,20' },
+    { id:'dark',   label:'Dark',            a:'160,160,160',b:'55,55,55'  },
+    { id:'sunset', label:'Sunset',          a:'232,120,60', b:'150,55,45' },
+    { id:'ocean',  label:'Ocean',           a:'60,150,220', b:'20,70,130' },
+    { id:'forest', label:'Forest',          a:'95,175,95',  b:'32,85,45'  },
+    { id:'rose',   label:'Rose',            a:'230,90,140', b:'120,30,60' },
+    { id:'amber',  label:'Amber',           a:'240,180,40', b:'150,100,10' },
+    { id:'sky',    label:'Sky',             a:'100,190,240',b:'30,90,150' },
+    { id:'mint',   label:'Mint',            a:'110,220,180',b:'30,120,90' }
+  ];
+
+  function applyThemeVisual(themeId){
+    const theme = ROOM_THEMES.find(t=>t.id === themeId) || ROOM_THEMES[0];
+    const viewer = document.getElementById('liveViewer');
+    if(viewer){
+      viewer.style.setProperty('--yc-theme-a', theme.a);
+      viewer.style.setProperty('--yc-theme-b', theme.b);
+    }
+    themeScroller?.querySelectorAll('.yc-theme-swatch').forEach(el=>{
+      el.classList.toggle('active', el.dataset.theme === theme.id);
+    });
+  }
+  function renderThemeScroller(){
+    if(!themeScroller) return;
+    themeScroller.innerHTML = ROOM_THEMES.map(t=>`
+      <button type="button" class="yc-theme-swatch" data-theme="${t.id}" style="flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:0; padding:0;">
+        <span style="display:block; width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, rgba(${t.a},1), rgba(${t.b},1)); border:2px solid transparent;"></span>
+        <b style="font-size:0.72rem; font-weight:600; color:var(--muted);">${t.label}</b>
+      </button>
+    `).join('');
+    themeScroller.querySelectorAll('.yc-theme-swatch').forEach(elBtn=>{
+      elBtn.addEventListener('click', async ()=>{
+        if(!canManageRoom()) return;
+        roomTheme = elBtn.dataset.theme;
+        localStorage.setItem(localThemeKey, roomTheme);
+        applyThemeVisual(roomTheme);
+        await saveRoomLayout();
+      });
+    });
+    applyThemeVisual(roomTheme);
+  }
+  window.ycApplyLiveRoomTheme = function(sharedTheme){
+    roomTheme = sharedTheme || 'gold';
+    applyThemeVisual(roomTheme);
+  };
 
   const SEAT_CAPACITY = {
     'full-screen':0, 'fluid-panel':3, 'fluid-grid':4, 'fixed-grid':9,
@@ -14007,6 +14072,36 @@ setInterval(()=>{
   function isLiveParticipant(){
     return !!(isGuest() || window.isBroadcastingHost);
   }
+  const EXPLICIT_GRID_COLS = {
+    'audio-room-20': 6, 'audio-room-30': 6,
+    'video-room-20': 4, 'video-room-30': 4
+  };
+  function assignExplicitGridCoords(chosen){
+    const grid = document.getElementById('liveGrid');
+    if(!grid) return;
+    const cols = EXPLICIT_GRID_COLS[chosen];
+    const tiles = Array.from(grid.querySelectorAll('.live-tile'));
+    if(!cols){
+      // Not one of the affected layouts — clear any explicit coords set earlier.
+      tiles.forEach(t=>{
+        t.style.removeProperty('grid-column');
+        t.style.removeProperty('grid-row');
+      });
+      return;
+    }
+    // Force every tile (real or placeholder) into a strict, gap-free
+    // row/column position ourselves, instead of relying on the browser's
+    // grid auto-placement (which was leaving a large blank band between
+    // the first row and the rest on some devices).
+    tiles.forEach((t, i)=>{
+      const col = (i % cols) + 1;
+      const row = Math.floor(i / cols) + 1;
+      t.style.setProperty('grid-column', String(col), 'important');
+      t.style.setProperty('grid-row', String(row), 'important');
+    });
+  }
+  window.assignExplicitGridCoords = assignExplicitGridCoords;
+  window.reapplyGuestGridCoords = function(){ assignExplicitGridCoords(layout); };
   function apply(sharedLayout, sharedSpots){
     const viewer = document.getElementById('liveViewer');
     if(!viewer) return;
@@ -14023,6 +14118,7 @@ setInterval(()=>{
     }
     viewer.classList.toggle('yc-guest-show-spots', !!spotsOn);
     refreshSeatPlaceholders();
+    assignExplicitGridCoords(chosen);
     scroller.querySelectorAll('.yc-layout-card').forEach(c=>{
       c.classList.toggle('active', c.dataset.layout === chosen);
       c.disabled = !canManageRoom();
@@ -14054,6 +14150,7 @@ setInterval(()=>{
         hostUid: window.currentLiveHostUid || window.currentUser.uid,
         layout,
         showAvailableSpots: showAvailable,
+        theme: roomTheme,
         updatedAt: window.serverTimestamp ? window.serverTimestamp() : new Date(),
         updatedBy: window.currentUser.uid
       }, {merge:true});
@@ -14100,17 +14197,22 @@ setInterval(()=>{
     scroller.classList.toggle('yc-show-all');
     showAll.textContent = scroller.classList.contains('yc-show-all') ? 'Show less' : 'Show all';
   });
+  renderThemeScroller();
   scroller.querySelectorAll('.yc-layout-card').forEach(card=>{
     card.addEventListener('click', async ()=>{
       if(!canManageRoom()) return;
       const newLayout = card.dataset.layout;
+      if(newLayout === layout) return;
       const newCap = SEAT_CAPACITY[newLayout];
       const grid = document.getElementById('liveGrid');
       const filled = grid ? grid.querySelectorAll('.live-tile:not(.live-tile-placeholder)').length : 0;
+      const label = card.querySelector('b')?.textContent || newLayout;
+      let confirmMsg = `Switch the room layout to "${label}"?`;
       if(typeof newCap === 'number' && newCap > 0 && filled > newCap){
-        const ok = confirm(`This layout only fits ${newCap} — right now ${filled} are in the room. Switching may remove some guests. Continue?`);
-        if(!ok) return;
+        confirmMsg = `This layout only fits ${newCap} — right now ${filled} are in the room. Switching may remove some guests. Continue?`;
       }
+      const ok = confirm(confirmMsg);
+      if(!ok) return;
       layout = newLayout;
       localStorage.setItem(localKey, layout);
       if(grid){ grid.style.transition = 'opacity .18s ease'; grid.style.opacity = '0'; }
