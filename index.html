@@ -1679,7 +1679,7 @@
   .live-comments{
     position:absolute; left:10px; right:66px; bottom:66px; max-height:26%;
     overflow-y:auto; display:flex; flex-direction:column; gap:6px; z-index:4;
-    background:linear-gradient(180deg, rgba(15,46,26,.72), rgba(8,26,15,.72));
+    background:none;
     border-radius:14px; padding:8px 10px;
     -webkit-mask-image: linear-gradient(to top, black 82%, transparent 100%);
     mask-image: linear-gradient(to top, black 82%, transparent 100%);
@@ -1690,6 +1690,7 @@
     border-radius:0; padding:2px 0;
     font-size:0.85rem; line-height:1.3; color:#fff; max-width:100%; word-break:break-word; display:flex; align-items:flex-start; gap:6px;
     cursor:pointer;
+    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 8px rgba(0,0,0,.5);
     animation:yc-comment-in .32s cubic-bezier(.2,.9,.3,1.2);
   }
   @keyframes yc-comment-in{
@@ -1824,7 +1825,7 @@
   .live-comments{
     left:12px; right:76px; bottom:68px; max-height:28%; z-index:25;
     gap:5px; padding:8px 10px; pointer-events:auto;
-    background:linear-gradient(180deg, rgba(15,46,26,.72), rgba(8,26,15,.72));
+    background:none;
     border-radius:14px;
   }
   .live-comment-row{
@@ -3614,7 +3615,7 @@ try{
     <button class="modal-close" id="settingsClose" aria-label="Back">←</button>
     <h3 data-i18n="settings_title">Settings</h3>
     <p class="modal-sub" data-i18n="settings_sub">Your account settings</p>
-    <p style="font-size:0.7rem; color:rgba(244,239,227,.35); margin:-8px 0 12px;">build 2026-09-12-c</p>
+    <p style="font-size:0.7rem; color:var(--muted); opacity:.6; margin:-8px 0 12px;">build 2026-09-13-a</p>
 
     <div class="settings-group-label" data-i18n="settings_account">Account</div>
     <button class="settings-row" data-open-sub="accountEditModal"><span class="sr-left"><span class="sr-icon">👤</span><span data-i18n="settings_edit_profile">Edit Profile</span></span><span class="sr-arrow">‹</span></button>
@@ -13411,7 +13412,34 @@ loadFxRates();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('/sw.js').catch(err=>console.log('SW error:', err));
+    navigator.serviceWorker.register('/sw.js').then(reg=>{
+      // Ask the browser to check the network for a newer sw.js/cache list
+      // right now, instead of waiting for its own lazy periodic check —
+      // this is what was letting an old cached build keep being served
+      // indefinitely even after the files on the server were updated.
+      reg.update();
+      const askNewWorkerToTakeOver = (worker)=>{
+        worker?.postMessage({type:'SKIP_WAITING'});
+      };
+      if(reg.waiting) askNewWorkerToTakeOver(reg.waiting);
+      reg.addEventListener('updatefound', ()=>{
+        const newWorker = reg.installing;
+        newWorker?.addEventListener('statechange', ()=>{
+          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+            askNewWorkerToTakeOver(newWorker);
+          }
+        });
+      });
+    }).catch(err=>console.log('SW error:', err));
+    // Once a new service worker actually takes control, this page is still
+    // running the old HTML/CSS/JS in memory — reload once so the update is
+    // actually visible instead of a stale mix of old and new.
+    let alreadyReloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(alreadyReloaded) return;
+      alreadyReloaded = true;
+      window.location.reload();
+    });
   });
 }
 
@@ -13738,18 +13766,18 @@ setInterval(()=>{
   top:64px!important; bottom:260px!important; left:8px!important; right:8px!important;
   height:auto!important; max-height:none!important;
   grid-template-rows:none!important;
-  grid-template-columns:repeat(6,1fr)!important; grid-auto-rows:82px!important;
-  gap:10px 2px!important; overflow-y:auto!important; align-content:start!important;
+  grid-template-columns:repeat(5,1fr)!important; grid-auto-rows:88px!important;
+  gap:12px 4px!important; overflow-y:auto!important; align-content:start!important;
   background:none!important;
-  border-radius:0!important; padding:4px!important;
+  border-radius:0!important; padding:10px 4px!important;
 }
 #liveViewer.yc-guest-layout-audio-room-20 .live-tile,
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile{
-  position:relative!important; inset:auto!important; width:100%!important; height:82px!important;
-  max-height:82px!important; aspect-ratio:auto!important; transform:none!important; border-radius:0!important; border:0!important;
+  position:relative!important; inset:auto!important; width:100%!important; height:88px!important;
+  max-height:88px!important; aspect-ratio:auto!important; transform:none!important; border-radius:0!important; border:0!important;
   background:none!important; box-shadow:none!important;
   display:flex!important; flex-direction:column!important; align-items:center!important; justify-content:flex-start!important;
-  gap:2px!important; overflow:hidden!important; cursor:default!important;
+  gap:3px!important; overflow:hidden!important; cursor:default!important;
 }
 #liveViewer.yc-guest-layout-audio-room-20 .live-tile .lt-video,
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile .lt-video{ display:none!important; }
@@ -13761,9 +13789,9 @@ setInterval(()=>{
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile > *:not(.lt-bottom){ display:none!important; }
 #liveViewer.yc-guest-layout-audio-room-20 .live-tile::before,
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile::before{
-  content:attr(data-audio-initial); width:46px; height:46px; border-radius:50%!important;
+  content:attr(data-audio-initial); width:52px; height:52px; border-radius:50%!important;
   background:linear-gradient(135deg,var(--gold),#8a6d1f); color:#1a1509; font-weight:800;
-  font-size:0.95rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  font-size:1rem; display:flex; align-items:center; justify-content:center; flex-shrink:0;
   border:1.5px solid rgba(255,255,255,.25);
 }
 #liveViewer.yc-guest-layout-audio-room-20 .live-tile .lt-bottom,
@@ -13781,13 +13809,13 @@ setInterval(()=>{
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile .lt-guest-badge{ display:none!important; }
 #liveViewer.yc-guest-layout-audio-room-20 .live-tile-placeholder,
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile-placeholder{
-  aspect-ratio:1/1.35!important; background:none!important; border:0!important;
-  flex-direction:column!important; gap:2px!important;
+  aspect-ratio:auto!important; background:none!important; border:0!important;
+  flex-direction:column!important; gap:4px!important;
 }
 #liveViewer.yc-guest-layout-audio-room-20 .live-tile-placeholder::before,
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile-placeholder::before{
-  content:'+'; width:46px; height:46px; border-radius:50%; border:2px dashed rgba(232,178,61,.55);
-  color:rgba(232,178,61,.85); font-size:1.2rem; display:flex; align-items:center; justify-content:center;
+  content:'+'; width:52px; height:52px; border-radius:50%; border:2px dashed rgba(232,178,61,.55);
+  color:rgba(232,178,61,.85); font-size:1.15rem; display:flex; align-items:center; justify-content:center;
 }
 #liveViewer.yc-guest-layout-audio-room-20 .live-tile-placeholder .live-seat-plus,
 #liveViewer.yc-guest-layout-audio-room-30 .live-tile-placeholder .live-seat-plus,
@@ -13799,15 +13827,15 @@ setInterval(()=>{
   top:150px!important; bottom:260px!important; left:10px!important; right:10px!important;
   height:auto!important; max-height:none!important;
   grid-template-rows:none!important;
-  grid-template-columns:repeat(4,1fr)!important; grid-auto-rows:170px!important;
+  grid-template-columns:repeat(3,1fr)!important; grid-auto-rows:155px!important;
   gap:6px!important; overflow-y:auto!important; align-content:start!important;
   background:linear-gradient(160deg, rgba(var(--yc-theme-b),.35), rgba(10,9,7,.25))!important;
   border-radius:18px!important; padding:10px 6px!important;
 }
 #liveViewer.yc-guest-layout-video-room-20 .live-tile,
 #liveViewer.yc-guest-layout-video-room-30 .live-tile{
-  position:relative!important; inset:auto!important; width:100%!important; height:170px!important;
-  max-height:170px!important; aspect-ratio:auto!important; transform:none!important; border-radius:10px!important;
+  position:relative!important; inset:auto!important; width:100%!important; height:155px!important;
+  max-height:155px!important; aspect-ratio:auto!important; transform:none!important; border-radius:10px!important;
   overflow:hidden!important;
 }
 #liveViewer.yc-guest-layout-video-room-20 .live-tile .lt-video,
@@ -14096,8 +14124,8 @@ setInterval(()=>{
     return !!(isGuest() || window.isBroadcastingHost);
   }
   const EXPLICIT_GRID_COLS = {
-    'audio-room-20': 6, 'audio-room-30': 6,
-    'video-room-20': 4, 'video-room-30': 4
+    'audio-room-20': 5, 'audio-room-30': 5,
+    'video-room-20': 3, 'video-room-30': 3
   };
   function assignExplicitGridCoords(chosen){
     const grid = document.getElementById('liveGrid');
