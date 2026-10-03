@@ -16719,7 +16719,11 @@ liveStartCloseTop.addEventListener('click', closeLiveStartModal);
 liveStartModal.addEventListener('click', (e)=>{ if(e.target === liveStartModal) closeLiveStartModal(); });
 
 async function fetchAgoraToken(channelName){
-  const resp = await fetch(`/api/generate-token?channel=${encodeURIComponent(channelName)}&uid=0`);
+  // The server only gives a token to a signed-in user, so we send the Firebase login proof with the request.
+  const idToken = currentUser ? await currentUser.getIdToken() : '';
+  const resp = await fetch(`/api/generate-token?channel=${encodeURIComponent(channelName)}&uid=0`, {
+    headers: idToken ? { Authorization: 'Bearer ' + idToken } : {}
+  });
   if(!resp.ok) throw new Error('token fetch failed');
   const data = await resp.json();
   if(!data.token) throw new Error('no token returned');
@@ -18699,30 +18703,70 @@ if('serviceWorker' in navigator){
       // this is what was letting an old cached build keep being served
       // indefinitely even after the files on the server were updated.
       reg.update();
-      const askNewWorkerToTakeOver = (worker)=>{
-        worker?.postMessage({type:'SKIP_WAITING'});
-      };
-      if(reg.waiting) askNewWorkerToTakeOver(reg.waiting);
+      // A new version is NEVER forced on people any more (it used to reload the page by itself, which could cut
+      // a live or a call). Instead a small "Update" bar appears and the person taps it when it suits them.
+      if(reg.waiting && navigator.serviceWorker.controller) ycShowUpdateBanner(reg.waiting);
       reg.addEventListener('updatefound', ()=>{
         const newWorker = reg.installing;
         newWorker?.addEventListener('statechange', ()=>{
-          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
-            askNewWorkerToTakeOver(newWorker);
-          }
+          if(newWorker.state === 'installed' && navigator.serviceWorker.controller) ycShowUpdateBanner(newWorker);
         });
       });
+      setInterval(()=>{ reg.update().catch(()=>{}); }, 10 * 60 * 1000);
+      document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') reg.update().catch(()=>{}); });
     }).catch(err=>console.log('SW error:', err));
     // Once a new service worker actually takes control, this page is still
     // running the old HTML/CSS/JS in memory — reload once so the update is
     // actually visible instead of a stale mix of old and new.
     let alreadyReloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-      if(alreadyReloaded) return;
+      if(alreadyReloaded || !ycUpdateRequestedByUser) return;   // only reload when the person tapped "Update"
       alreadyReloaded = true;
       window.location.reload();
     });
   });
 }
+
+// ===== "New version available" bar =====
+let ycUpdateRequestedByUser = false, ycUpdateBannerEl = null;
+function ycShowUpdateBanner(worker){
+  if(ycUpdateBannerEl) return;
+  const am = (typeof currentLang !== 'undefined' && currentLang === 'am');
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed; left:12px; right:12px; top:calc(10px + env(safe-area-inset-top,0px)); z-index:100003; display:flex; align-items:center; gap:10px; background:#161b2e; color:#fff; border:1px solid rgba(232,178,61,.6); border-radius:14px; padding:10px 12px; box-shadow:0 6px 20px rgba(0,0,0,.45); font-size:.92rem;';
+  bar.innerHTML = '<span style="flex:1;">🔄 ' + (am ? 'አዲስ ስሪት አለ' : 'A new version is available') + '</span>' +
+    '<button type="button" id="ycUpdNow" style="background:var(--gold,#e8b23d); color:#1a1305; border:none; border-radius:10px; padding:8px 14px; font-weight:800;">' + (am ? 'አዘምን' : 'Update') + '</button>' +
+    '<button type="button" id="ycUpdLater" aria-label="Later" style="background:transparent; border:none; color:#aab; font-size:1.2rem; padding:4px 8px;">✕</button>';
+  document.body.appendChild(bar);
+  ycUpdateBannerEl = bar;
+  bar.querySelector('#ycUpdLater').addEventListener('click', ()=>{ bar.remove(); ycUpdateBannerEl = null; });
+  bar.querySelector('#ycUpdNow').addEventListener('click', ()=>{
+    ycUpdateRequestedByUser = true;
+    try{ if(worker) worker.postMessage({ type:'SKIP_WAITING' }); }catch(_){}
+    setTimeout(()=> window.location.reload(), 1500);   // fallback if the new worker was already active
+  });
+}
+// Second signal, for builds where the service worker itself did not change: has the site's main page changed?
+(function ycWatchForNewVersion(){
+  let baseline = null, last = 0;
+  async function sig(){
+    try{
+      const r = await fetch('/', { method:'HEAD', cache:'no-store' });
+      return r.headers.get('etag') || r.headers.get('last-modified') || r.headers.get('content-length') || null;
+    }catch(_){ return null; }
+  }
+  async function check(){
+    if(Date.now() - last < 5 * 60 * 1000) return;
+    last = Date.now();
+    const v = await sig();
+    if(!v) return;
+    if(baseline === null){ baseline = v; return; }
+    if(v !== baseline) ycShowUpdateBanner(null);
+  }
+  window.addEventListener('load', ()=> setTimeout(check, 4000));
+  setInterval(check, 10 * 60 * 1000);
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') check(); });
+})();
 
 // BRIDGE FOR CLASSIC (non-module) <script> BLOCKS BELOW, e.g. the Room
 // Layout settings script. Variables declared with let/const inside a
