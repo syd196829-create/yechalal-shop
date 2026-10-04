@@ -3444,7 +3444,8 @@ try{
     <div class="ai-composer-wrap">
       <div class="ai-composer">
         <div id="aiAssistantPreviewRow" class="ai-preview-row" style="display:none;">
-          <div class="ai-preview-thumb">
+          <div class="ai-file-chip" id="aiAssistantFileChip" style="display:none;"><span id="aiAssistantFileName"></span><button type="button" id="aiAssistantFileRemove" aria-label="Remove file">✕</button></div>
+          <div class="ai-preview-thumb" id="aiAssistantThumbBox">
             <img id="aiAssistantPreviewImg" alt="">
             <button type="button" id="aiAssistantPreviewRemove" aria-label="Remove photo">✕</button>
           </div>
@@ -3453,11 +3454,13 @@ try{
         <div class="ai-composer-bar">
           <div class="ai-plus-wrap">
             <input type="file" id="aiAssistantPhotoInput" accept="image/*" style="display:none;">
+            <input type="file" id="aiAssistantFileInput" accept=".txt,.md,.csv,.json,.html,.htm,.css,.js,.xml,.yml,.yaml,.log,.pdf,text/*,application/json,application/pdf" style="display:none;">
             <input type="file" id="aiAssistantCameraInput" accept="image/*" capture="environment" style="display:none;">
             <button type="button" id="aiAssistantPhotoBtn" class="ai-round-btn" aria-label="Attach photo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
             <div class="ai-plus-menu" id="aiPlusMenu">
               <button type="button" id="aiPlusCamera"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg><span data-i18n="cam_label">Camera</span></button>
               <button type="button" id="aiPlusGallery"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span data-i18n="photos_label">Photos</span></button>
+              <button type="button" id="aiPlusFile"><span style="font-size:1.25rem; line-height:1;">📎</span> File</button>
             </div>
           </div>
           <div class="ai-bar-right">
@@ -3485,6 +3488,32 @@ try{
   const previewRemove = document.getElementById('aiAssistantPreviewRemove');
   const micBtn = document.getElementById('aiAssistantMicBtn');
   let pendingImageData = null; // base64 data URL of an attached photo, or null
+  let pendingFile = null;      // a file waiting to be sent: { name, kind:'text'|'pdf', text | data }
+  let aiFile = null;           // the file the conversation is about (updated to the newest edited version)
+  let aiFileBeforeReply = null;
+  const AI_TEXT_EXT = ['txt','md','csv','json','html','htm','css','js','xml','yml','yaml','log'];
+  const fileChip = document.getElementById('aiAssistantFileChip');
+  const fileNameEl = document.getElementById('aiAssistantFileName');
+  const thumbBox = document.getElementById('aiAssistantThumbBox');
+  function refreshPreviewRow(){
+    thumbBox.style.display = pendingImageData ? 'block' : 'none';
+    fileChip.style.display = pendingFile ? 'flex' : 'none';
+    if(pendingFile) fileNameEl.textContent = '📎 ' + pendingFile.name;
+    previewRow.style.display = (pendingImageData || pendingFile) ? 'block' : 'none';
+    updateSendState();
+  }
+  // Download a returned file (works on phones: a temporary link is clicked for you)
+  function downloadAiFile(name, content){
+    const ext = (name.split('.').pop() || 'txt').toLowerCase();
+    const types = { json:'application/json', html:'text/html', htm:'text/html', css:'text/css', js:'text/javascript', xml:'application/xml', csv:'text/csv', md:'text/markdown', yml:'text/yaml', yaml:'text/yaml' };
+    const bom = ext === 'csv' ? '\ufeff' : '';          // so Excel shows Amharic letters correctly
+    const blob = new Blob([bom + content], { type: (types[ext] || 'text/plain') + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 4000);
+  }
   // ---- AI settings (saved on this phone) ----
   const AI_SETTINGS_KEY = 'ycAiSettings';
   const aiSettings = { lang:'auto', length:'medium', tone:'friendly', about:'', compress:true };
@@ -3493,12 +3522,43 @@ try{
   const cameraInput = document.getElementById('aiAssistantCameraInput');
   const plusMenu = document.getElementById('aiPlusMenu');
   function updateSendState(){
-    sendBtn.classList.toggle('ready', !!((input.value || '').trim() || pendingImageData));
+    sendBtn.classList.toggle('ready', !!((input.value || '').trim() || pendingImageData || pendingFile));
   }
   function closePlusMenu(){ plusMenu.classList.remove('open'); }
   photoBtn?.addEventListener('click', (e)=>{ e.stopPropagation(); plusMenu.classList.toggle('open'); });
   document.getElementById('aiPlusGallery')?.addEventListener('click', ()=>{ closePlusMenu(); photoInput.click(); });
   document.getElementById('aiPlusCamera')?.addEventListener('click', ()=>{ closePlusMenu(); cameraInput.click(); });
+  const aiFileInput = document.getElementById('aiAssistantFileInput');
+  document.getElementById('aiPlusFile')?.addEventListener('click', ()=>{ closePlusMenu(); aiFileInput.click(); });
+  aiFileInput?.addEventListener('change', ()=>{
+    const f = aiFileInput.files?.[0];
+    aiFileInput.value = '';
+    if(!f) return;
+    const am = (localStorage.getItem('yechalalLang') || 'en') === 'am';
+    const ext = (f.name.split('.').pop() || '').toLowerCase();
+    if(ext === 'pdf' || f.type === 'application/pdf'){
+      if(f.size > 2 * 1024 * 1024){ alert(am ? 'PDF ፋይሉ ትልቅ ነው (ከ2 MB መብለጥ የለበትም)' : 'The PDF is too large (max 2 MB).'); return; }
+      const rd = new FileReader();
+      rd.onload = ()=>{ pendingFile = { name: f.name, kind:'pdf', data: rd.result }; refreshPreviewRow(); };
+      rd.readAsDataURL(f);
+      return;
+    }
+    if(!AI_TEXT_EXT.includes(ext) && !(f.type || '').startsWith('text/')){
+      alert(am ? 'ይህ የፋይል ዓይነት አይደገፍም። txt፣ md፣ csv፣ json፣ html፣ css፣ js፣ xml፣ yaml ወይም pdf ላክ።' : 'This file type is not supported. Send txt, md, csv, json, html, css, js, xml, yaml or pdf.');
+      return;
+    }
+    if(f.size > 200 * 1024){ alert(am ? 'ፋይሉ በጣም ትልቅ ነው።' : 'The file is too large.'); return; }
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      const text = String(rd.result || '');
+      if(!text.trim()){ alert(am ? 'ፋይሉ ባዶ ነው።' : 'The file is empty.'); return; }
+      if(text.length > 60000){ alert(am ? 'ፋይሉ ረጅም ነው (ከ60,000 ፊደል መብለጥ የለበትም)። ትንሽ ክፍል ላክ።' : 'The file is too long (max 60,000 characters). Send a smaller part.'); return; }
+      pendingFile = { name: f.name, kind:'text', text };
+      refreshPreviewRow();
+    };
+    rd.readAsText(f);
+  });
+  document.getElementById('aiAssistantFileRemove')?.addEventListener('click', ()=>{ pendingFile = null; refreshPreviewRow(); });
   modal?.addEventListener('click', (e)=>{ if(!e.target.closest('.ai-plus-wrap')) closePlusMenu(); });
   // Shrink a photo before sending: the backend runs on Vercel, whose request
   // limit is ~4.5 MB, and phone photos are often bigger than that (and slow to upload).
@@ -3532,8 +3592,7 @@ try{
       if(aiSettings.compress || data.length > 3000000) data = await compressImage(data, 1280, 0.8);
       pendingImageData = data;
       previewImg.src = pendingImageData;
-      previewRow.style.display = 'block';
-      updateSendState();
+      refreshPreviewRow();
     };
     reader.readAsDataURL(file);
     inp.value = '';
@@ -3542,8 +3601,7 @@ try{
   cameraInput?.addEventListener('change', ()=> handlePickedPhoto(cameraInput));
   previewRemove?.addEventListener('click', ()=>{
     pendingImageData = null;
-    previewRow.style.display = 'none';
-    updateSendState();
+    refreshPreviewRow();
   });
   // Voice input (speech-to-text) for the AI Assistant text box.
   (function setupAiMic(){
@@ -3597,12 +3655,13 @@ try{
     share: _ic('<polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>'),
     up:    _ic('<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>'),
     down:  _ic('<path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/>'),
+    dl:    _ic('<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>'),
     redo:  _ic('<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>')
   };
   let lastAiRedoBtn = null;
   const _L = (x)=> (window.L ? window.L(x) : x);
 
-  function addBubble(text, who, imageData){
+  function addBubble(text, who, imageData, userFileName, outFile){
     const wrap = document.createElement('div');
     wrap.style.cssText = `display:flex; flex-direction:column; align-items:${who==='user'?'flex-end':'flex-start'}; max-width:82%;`;
     const row = document.createElement('div');
@@ -3613,10 +3672,24 @@ try{
       img.style.cssText = 'display:block; max-width:100%; border-radius:10px;' + (text ? ' margin-bottom:6px;' : '');
       row.appendChild(img);
     }
+    if(userFileName){
+      const chip = document.createElement('div');
+      chip.textContent = '📎 ' + userFileName;
+      chip.style.cssText = 'font-weight:700; margin-bottom:' + (text ? '6px' : '0') + '; word-break:break-all;';
+      row.appendChild(chip);
+    }
     if(text){
       const span = document.createElement('span');
       span.textContent = text;
       row.appendChild(span);
+    }
+    if(outFile && outFile.content){
+      const dl = document.createElement('button');
+      dl.type = 'button';
+      dl.textContent = '⬇ ' + ((localStorage.getItem('yechalalLang') || 'en') === 'am' ? 'አውርድ' : 'Download') + ' · ' + outFile.name;
+      dl.style.cssText = 'display:block; margin-top:10px; width:100%; padding:11px 12px; border:none; border-radius:12px; background:var(--gold); color:#1a1509; font-weight:800; font-size:.9rem; word-break:break-all; text-align:center;';
+      dl.addEventListener('click', ()=> downloadAiFile(outFile.name, outFile.content));
+      row.appendChild(dl);
     }
     wrap.appendChild(row);
 
@@ -3647,6 +3720,8 @@ try{
           navigator.clipboard?.writeText(text || '').catch(()=>{});
         }
       });
+      const saveBtn = mk('dl', 'Download as text');
+      saveBtn.addEventListener('click', ()=> downloadAiFile('madam-kimem-reply.txt', text || ''));
       const upBtn = mk('up', 'Good response');
       const downBtn = mk('down', 'Bad response');
       const setFeedback = (chosen)=>{
@@ -3666,7 +3741,7 @@ try{
       // Only the newest reply can be regenerated.
       if(lastAiRedoBtn) lastAiRedoBtn.remove();
       lastAiRedoBtn = redoBtn;
-      actions.append(copyBtn, shareBtn, upBtn, downBtn, redoBtn);
+      actions.append(copyBtn, shareBtn, saveBtn, upBtn, downBtn, redoBtn);
       wrap.appendChild(actions);
     }
 
@@ -3719,6 +3794,7 @@ try{
     return {
       messages: recent.map(m => ({ role: m.role, content: m.content })),
       image,
+      file: aiFile || undefined,
       settings: { lang: aiSettings.lang, length: aiSettings.length, tone: aiSettings.tone, about: (aiSettings.about || '').slice(0, 300), uiLang: (localStorage.getItem('yechalalLang') || 'en') }
     };
   }
@@ -3742,24 +3818,44 @@ try{
         limitMsg.textContent = "Today's AI budget is used up for everyone — try again tomorrow!";
         return;
       }
-      const resp = await fetch(AI_WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildAiRequest())
-      });
-      const data = await resp.json();
+      const aiBody = JSON.stringify(buildAiRequest());
+      let resp, data;
+      for(let attempt = 1; attempt <= 3; attempt++){
+        // the server only answers signed-in users, so the login proof goes along (fresh each try; it expires after an hour)
+        const aiIdToken = window.currentUser ? await window.currentUser.getIdToken() : '';
+        resp = await fetch(AI_WORKER_URL, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, aiIdToken ? { Authorization: 'Bearer ' + aiIdToken } : {}), body: aiBody });
+        data = await resp.json().catch(()=>({}));
+        if(data.reply || data.image) break;
+        if(![429, 502, 503, 504].includes(resp.status) || attempt === 3) break;   // only "busy" errors are worth retrying
+        thinking.textContent = '…thinking (' + attempt + '/3)';
+        await new Promise(r => setTimeout(r, attempt * 2500));
+      }
       thinking.remove();
       if(data.reply || data.image){
-        addBubble(data.reply, 'ai', data.image);
+        if(data.file && data.file.content){
+          aiFileBeforeReply = aiFile ? Object.assign({}, aiFile) : null;
+          if(aiFile && aiFile.kind === 'text') aiFile = { name: data.file.name, kind:'text', text: data.file.content };
+          else aiFile = { name: data.file.name, kind:'text', text: data.file.content };   // a PDF becomes a text file from here on
+        }
+        addBubble(data.reply, 'ai', data.image, null, data.file || null);
         aiHistory.push({ role: 'assistant', content: data.reply || '[image]' });
         cap.count += 1;
         localStorage.setItem(capKey, JSON.stringify(cap));
       } else {
-        addBubble('⚠️ Debug info — status ' + resp.status + ': ' + (data.error || 'unknown') + (data.details ? ('\n' + JSON.stringify(data.details).slice(0, 500)) : (data.detail ? ('\n' + String(data.detail).slice(0, 400)) : '')), 'ai');
+        const detailTxt = 'status ' + resp.status + ': ' + (data.error || 'unknown') + (data.details ? (' ' + JSON.stringify(data.details).slice(0, 500)) : (data.detail ? (' ' + String(data.detail).slice(0, 400)) : ''));
+        console.warn('AI error —', detailTxt);
+        const busy = [429, 502, 503, 504].includes(resp.status);
+        const isAm = (localStorage.getItem('yechalalLang') || 'en') === 'am';
+        let friendly = busy
+          ? (isAm ? 'ይቅርታ፣ ረዳቱ አሁን በጣም ተጨናንቋል። ጥቂት ቆይተህ ከታች ያለውን 🔄 ንካ ወይም እንደገና ጠይቅ 🙏' : 'Sorry, the assistant is very busy right now. Wait a moment, then tap 🔄 or ask again 🙏')
+          : (isAm ? 'ይቅርታ፣ አሁን መልስ መስጠት አልቻልኩም። እባክህ እንደገና ሞክር።' : "Sorry, I couldn't answer just now. Please try again.");
+        if(localStorage.getItem('ycDebug') === '1') friendly += ' ⚠️ ' + detailTxt;
+        addBubble(friendly, 'ai');
       }
     }catch(e){
       thinking.remove();
-      addBubble('⚠️ Debug info — fetch failed: ' + (e && e.message ? e.message : String(e)), 'ai');
+      console.warn('AI fetch failed —', e);
+      addBubble(((localStorage.getItem('yechalalLang') || 'en') === 'am') ? 'ግንኙነት አልተሳካም። ኢንተርኔትህን አረጋግጠህ እንደገና ሞክር።' : 'Connection failed. Check your internet and try again.', 'ai');
     }
   }
 
@@ -3768,13 +3864,14 @@ try{
     // same last user message.
     if(aiHistory.length && aiHistory[aiHistory.length - 1].role === 'assistant'){
       aiHistory.pop();
+      if(aiFileBeforeReply){ aiFile = aiFileBeforeReply; aiFileBeforeReply = null; }
     }
     requestAiReply();
   };
 
   async function sendAiMessage(){
     const text = input.value.trim();
-    if((!text && !pendingImageData) || !window.currentUser) return;
+    if((!text && !pendingImageData && !pendingFile) || !window.currentUser) return;
     const capKey = 'ycAiAssistantCap';
     const today = new Date().toISOString().slice(0,10);
     let cap;
@@ -3789,14 +3886,16 @@ try{
     input.style.height = '28px';
     updateSendState();
     const imageToSend = pendingImageData;
-    addBubble(text, 'user', imageToSend);
+    const fileToSend = pendingFile;
+    addBubble(text, 'user', imageToSend, fileToSend ? fileToSend.name : null);
+    if(fileToSend){ aiFile = fileToSend; aiFileBeforeReply = null; pendingFile = null; }
     if(imageToSend){
       aiHistory.push({ role: 'user', content: text || 'What do you see in this photo?', image: imageToSend });
       pendingImageData = null;
-      previewRow.style.display = 'none';
     } else {
-      aiHistory.push({ role: 'user', content: text });
+      aiHistory.push({ role: 'user', content: text || (fileToSend ? 'Please check this file, fix any mistakes and give me the corrected file.' : '') });
     }
+    refreshPreviewRow();
     await requestAiReply();
   }
   sendBtn?.addEventListener('click', sendAiMessage);
@@ -3842,9 +3941,9 @@ try{
     lastAiRedoBtn = null;
     msgsBox.innerHTML = '';
     pendingImageData = null;
-    previewRow.style.display = 'none';
+    pendingFile = null; aiFile = null; aiFileBeforeReply = null;
+    refreshPreviewRow();
     limitMsg.style.display = 'none';
-    updateSendState();
     addBubble(_L("Hi! I'm Madam Kimem 🤖 — ask me anything."), 'ai');
     history.back();   // closes the settings panel
   });
@@ -20210,4 +20309,11 @@ body.yc-feed-open{ background:#000 !important; }
   border-radius:0 !important; border:none !important; margin:0;
   padding:72px 22px calc(40px + env(safe-area-inset-bottom,0px));
 }
+</style>
+
+<style id="yechalal-ai-file">
+.ai-file-chip{ display:flex; align-items:center; gap:8px; max-width:100%; width:fit-content; margin:0 0 8px; padding:7px 10px; border-radius:12px; background:rgba(255,255,255,.1); font-size:.85rem; font-weight:700; }
+.ai-file-chip span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60vw; }
+.ai-file-chip button{ background:transparent; border:none; color:inherit; font-size:1rem; padding:0 2px; }
+#aiPlusMenu button#aiPlusFile{ display:flex; align-items:center; gap:10px; }
 </style>
