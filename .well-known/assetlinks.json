@@ -1,8 +1,0 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "app.vercel.yechalal_shop.twa",
-    "sha256_cert_fingerprints": ["44:82:FF:F5:D5:9A:E0:8F:FC:A6:BE:74:B2:80:36:4A:B0:4B:E8:17:80:6C:CA:E7:D4:92:E0:A4:87:DB:C3:09"]
-  }
-}]
