@@ -5558,6 +5558,7 @@ try{
     <h3 data-i18n="wallet_buy_title">Buy Aito Kef</h3>
     <p class="modal-sub" data-i18n="wallet_buy_sub">1 Aito Kef = 5 birr. Choose a package</p>
     <p class="modal-sub" id="buyCountryHint" style="margin-top:-6px; opacity:.85;"></p>
+    <div class="buy-balance"><i class="yc-coin-icon"></i><b id="buyBalanceVal">0</b></div>
     <div id="buyCountrySheet" style="display:none; position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.55);">
       <div id="buyCountrySheetBox" style="position:absolute; left:0; right:0; bottom:0; background:var(--panel, #161b2e); border-radius:18px 18px 0 0; padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px)); box-shadow:0 -8px 24px rgba(0,0,0,.4);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -5583,9 +5584,38 @@ try{
       <button class="coin-pkg" data-amt="100"><span class="cp-check">✓</span><span class="cp-coins"><i class="yc-coin-icon"></i><i class="yc-coin-icon"></i></span><b class="cp-amt">100</b><span class="cp-name">Aito Kef</span><span class="cp-price">500 birr</span><small class="local-fx" data-birr="500"></small></button>
       <button class="coin-pkg" data-amt="250"><span class="cp-badge" data-i18n="cp_popular">🔥 Popular</span><span class="cp-check">✓</span><span class="cp-coins"><i class="yc-coin-icon"></i><i class="yc-coin-icon"></i><i class="yc-coin-icon"></i></span><b class="cp-amt">250</b><span class="cp-name">Aito Kef</span><span class="cp-price">1250 birr</span><small class="local-fx" data-birr="1250"></small></button>
       <button class="coin-pkg" data-amt="500"><span class="cp-check">✓</span><span class="cp-coins"><i class="yc-coin-icon"></i><i class="yc-coin-icon"></i><i class="yc-coin-icon"></i><i class="yc-coin-icon"></i></span><b class="cp-amt">500</b><span class="cp-name">Aito Kef</span><span class="cp-price">2500 birr</span><small class="local-fx" data-birr="2500"></small></button>
+      <button type="button" class="coin-custom" id="coinCustomTile"><span class="cc-ico">✏️</span><b>Custom</b><small>50 – 100,000</small></button>
     </div>
+    <div class="coin-custom-row" id="coinCustomRow">
+      <i class="yc-coin-icon"></i>
+      <input type="number" inputmode="numeric" id="coinCustomInput" placeholder="50 to 100,000" min="50" max="100000">
+      <button type="button" id="coinCustomGo" disabled>Continue</button>
+    </div>
+    <div class="auth-msg" id="coinCustomMsg"></div>
+    <div id="buySheetBackdrop"></div>
+    <div class="buy-sheet" id="buySheet">
+      <div class="buy-sheet-grab"></div>
+      <h4 id="buySheetTitle">Buy Aito Kef</h4>
+      <div class="buy-sheet-price" id="buySheetPrice"></div>
+      <div id="buyDirect" style="display:none;">
+        <div class="buy-sheet-label">Pay with</div>
+        <div class="pay-chips" id="payChips">
+          <button type="button" data-m="telebirr" class="on">telebirr</button>
+          <button type="button" data-m="cbebirr">CBE Birr</button>
+          <button type="button" data-m="ebirr">Ebirr</button>
+          <button type="button" data-m="mpesa">M-Pesa</button>
+          <button type="button" data-m="page">More…</button>
+        </div>
+        <div id="payPhoneBox">
+          <div class="buy-sheet-label">Wallet phone number</div>
+          <div class="pay-phone"><span>+251</span><input id="payPhone" type="tel" inputmode="numeric" maxlength="10" placeholder="9XXXXXXXX" autocomplete="tel-national"></div>
+          <button class="btn-block gold" id="payMobileBtn" type="button">🔒 Pay</button>
+        </div>
+      </div>
     <button class="btn-block gold" id="coinPayNow" style="display:none; margin:12px 0 4px;">⚡ Pay now with Telebirr / Bank (automatic)</button>
+    <div class="buy-sheet-via" id="buySheetVia"></div>
     <div class="auth-msg" id="coinPayMsg"></div>
+    <div class="buy-sheet-label" id="buySheetManualLbl">Or pay another way · send the money, then enter the receipt</div>
     <div class="pay-method-tabs" id="payMethodTabs" style="display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px;"></div>
     <div class="pay-info-box" id="payInfoBox">
       <b data-i18n="buycoins_payinfo_label">Payment Info:</b><br>
@@ -5596,8 +5626,36 @@ try{
     <input class="field-input" type="text" id="coinRefInput" data-i18n-placeholder="buycoins_ref_ph" placeholder="e.g. FT2394829102 or the phone number you sent from">
     <button class="btn-block gold" id="coinRequestSubmit" data-i18n="buycoins_submit">Send Request</button>
     <div class="auth-msg" id="coinMsg"></div>
+    </div>
   </div>
 </div>
+<style id="ycBuyCss">
+.buy-balance{ display:flex; align-items:center; gap:10px; font-size:1.7rem; font-weight:800; margin:2px 0 6px; }
+.buy-balance .yc-coin-icon{ width:34px; height:34px; }
+.coin-custom{ grid-column:1 / -1; display:flex; align-items:center; justify-content:center; gap:10px; background:var(--bg-soft); border:2px dashed rgba(244,239,227,0.3); border-radius:18px; padding:14px; color:var(--cream); font-family:inherit; font-size:1rem; cursor:pointer; }
+.coin-custom small{ opacity:.7; }
+.coin-custom.selected{ border-style:solid; border-color:var(--gold); background:rgba(232,178,61,0.12); }
+.coin-custom-row{ display:none; align-items:center; gap:10px; background:var(--bg-soft); border:1px solid rgba(244,239,227,0.18); border-radius:100px; padding:8px 8px 8px 16px; margin:4px 0 6px; }
+.coin-custom-row .yc-coin-icon{ width:26px; height:26px; flex:none; }
+.coin-custom-row input{ flex:1; min-width:0; background:none; border:0; outline:0; color:var(--cream); font-size:1.05rem; font-family:inherit; }
+.coin-custom-row button{ background:var(--gold); color:#1a1400; border:0; border-radius:100px; padding:10px 18px; font-weight:800; font-family:inherit; }
+.coin-custom-row button:disabled{ opacity:.4; }
+#buySheetBackdrop{ display:none; position:fixed; inset:0; z-index:405; background:rgba(0,0,0,.5); }
+#buySheetBackdrop.open{ display:block; }
+.buy-sheet{ display:none; position:fixed; left:0; right:0; bottom:0; z-index:410; background:var(--panel,#161b2e); color:var(--cream); border-radius:22px 22px 0 0; padding:10px 18px calc(18px + env(safe-area-inset-bottom,0px)); max-height:80vh; overflow-y:auto; box-shadow:0 -12px 40px rgba(0,0,0,.4); }
+.buy-sheet.open{ display:block; }
+.buy-sheet-grab{ width:44px; height:5px; border-radius:5px; background:rgba(128,128,128,.45); margin:2px auto 12px; }
+.buy-sheet h4{ margin:0 0 2px; font-size:1.35rem; font-weight:800; }
+.buy-sheet-price{ opacity:.75; margin-bottom:12px; font-size:.95rem; }
+.buy-sheet-via{ text-align:center; opacity:.75; font-size:.85rem; margin:2px 0 10px; }
+.buy-sheet-label{ opacity:.75; font-size:.9rem; margin:10px 0 2px; }
+.pay-chips{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 4px; }
+.pay-chips button{ border:1.5px solid rgba(244,239,227,0.2); background:var(--bg-soft); color:var(--cream); border-radius:100px; padding:10px 15px; font-weight:700; font-family:inherit; font-size:.95rem; }
+.pay-chips button.on{ border-color:var(--gold); background:rgba(232,178,61,0.18); }
+.pay-phone{ display:flex; align-items:center; gap:10px; background:var(--bg-soft); border:1px solid rgba(244,239,227,0.18); border-radius:100px; padding:4px 18px; margin:6px 0 12px; }
+.pay-phone span{ opacity:.8; font-weight:800; }
+.pay-phone input{ flex:1; min-width:0; background:none; border:0; outline:0; color:var(--cream); font-size:1.1rem; padding:13px 0; font-family:inherit; letter-spacing:.5px; }
+</style>
 <script>
 (function(){
   const tabsBox = document.getElementById('payMethodTabs');
@@ -5633,6 +5691,49 @@ try{
     { id:'crypto', flag:'₿', label:'Crypto (USDT)',
       instructions:'Send the USDT equivalent to the wallet above, then enter the transaction hash below.',
       refLabel:'Transaction hash (TxID)', refPh:'e.g. the on-chain transaction hash' },
+    // ---- by country: a method is shown only to people in these countries, and only when its account lines are filled in ----
+    { id:'mpesa', flag:'📱', label:'M-Pesa', countries:['Kenya','Tanzania','Ethiopia','Mozambique','Ghana','Egypt'],
+      instructions:'Send the local-currency amount by M-Pesa to the number above, then enter the M-Pesa confirmation code below.',
+      refLabel:'M-Pesa confirmation code', refPh:'e.g. QJK7XXXXXX' },
+    { id:'mtn', flag:'📱', label:'MTN MoMo', countries:['Uganda','Ghana','Rwanda','Cameroon','Ivory Coast','Zambia'],
+      instructions:'Send the amount by MTN Mobile Money to the number above, then enter the transaction ID below.',
+      refLabel:'MoMo transaction ID', refPh:'e.g. the transaction ID from the SMS' },
+    { id:'airtel', flag:'📱', label:'Airtel Money', countries:['Kenya','Uganda','Tanzania','Zambia','Rwanda','Malawi'],
+      instructions:'Send the amount by Airtel Money to the number above, then enter the transaction ID below.',
+      refLabel:'Airtel Money transaction ID', refPh:'e.g. the transaction ID from the SMS' },
+    { id:'orange', flag:'📱', label:'Orange Money', countries:['Senegal','Ivory Coast','Cameroon','Mali','Burkina Faso','Morocco'],
+      instructions:'Send the amount by Orange Money to the number above, then enter the transaction ID below.',
+      refLabel:'Orange Money transaction ID', refPh:'e.g. the transaction ID from the SMS' },
+    { id:'gulf', flag:'🏦', label:'Bank / STC Pay (Gulf)', countries:['Saudi Arabia','UAE','Kuwait','Qatar','Bahrain','Oman'],
+      instructions:'Transfer the amount to the account above (bank transfer or STC Pay), then enter the transfer reference below.',
+      refLabel:'Transfer reference', refPh:'e.g. the reference number of your transfer' },
+    { id:'egypt', flag:'🇪🇬', label:'Vodafone Cash / InstaPay', countries:['Egypt'],
+      instructions:'Send the amount to the number/account above, then enter the transaction reference below.',
+      refLabel:'Transaction reference', refPh:'e.g. the reference from the confirmation message' },
+    { id:'sudan', flag:'🇸🇩', label:'Bankak / Bank transfer', countries:['Sudan'],
+      instructions:'Send the amount to the account above, then enter the transaction number below.',
+      refLabel:'Transaction number', refPh:'e.g. the number from the confirmation message' },
+    { id:'somali', flag:'🇸🇴', label:'EVC Plus / Zaad / D-Money', countries:['Somalia','Djibouti'],
+      instructions:'Send the amount to the number above, then enter the transaction ID below.',
+      refLabel:'Transaction ID', refPh:'e.g. the transaction ID from the SMS' },
+    { id:'usbank', flag:'🇺🇸', label:'Zelle / Cash App', countries:['USA'],
+      instructions:'Send the dollar amount to the account above, then enter the transaction ID below.',
+      refLabel:'Transaction ID', refPh:'e.g. the confirmation number' },
+    { id:'interac', flag:'🇨🇦', label:'Interac e-Transfer', countries:['Canada'],
+      instructions:'Send the amount by e-Transfer to the e-mail above, then enter the confirmation number below.',
+      refLabel:'Confirmation number', refPh:'e.g. the e-Transfer confirmation number' },
+    { id:'sepa', flag:'🇪🇺', label:'Bank transfer (EUR / SEPA)', countries:['Germany','Netherlands','France','Italy','Spain','Belgium','Austria','Finland','Ireland','Greece','Portugal','Sweden','Norway','Denmark','Switzerland','Poland'],
+      instructions:'Transfer the amount to the account above, then enter the transfer reference below.',
+      refLabel:'Transfer reference', refPh:'e.g. the reference of your bank transfer' },
+    { id:'ukbank', flag:'🇬🇧', label:'UK bank transfer', countries:['UK'],
+      instructions:'Transfer the amount to the account above, then enter the transfer reference below.',
+      refLabel:'Transfer reference', refPh:'e.g. the reference of your bank transfer' },
+    { id:'remit', flag:'💸', label:'Western Union / MoneyGram / Remitly',
+      instructions:'Send the money to the receiver above, then enter the tracking number (MTCN / reference) below.',
+      refLabel:'Tracking number (MTCN / reference)', refPh:'e.g. the money-transfer tracking number' },
+    { id:'swift', flag:'🌐', label:'International bank transfer (SWIFT)',
+      instructions:'Transfer the USD equivalent to the bank account above, then enter the transfer reference below.',
+      refLabel:'Transfer reference', refPh:'e.g. the SWIFT / bank reference' },
   ];
   const infoLines = document.getElementById('payInfoLines');
   const instructionsEl = document.getElementById('payInfoInstructions');
@@ -5661,7 +5762,10 @@ try{
     if(refInput) refInput.placeholder = m.refPh;
   }
   function render(){
-    const methods = PAY_METHODS.filter(m=> linesOf(m).length);
+    let _c = ''; try{ _c = (window.ycBuyCountry && window.ycBuyCountry()) || ''; }catch(e){}
+    const inCountry = (m)=> !m.countries || !_c || _c === 'USD_ONLY' ? (!m.countries || !_c) : m.countries.includes(_c);
+    const methods = PAY_METHODS.filter(m=> linesOf(m).length && inCountry(m))
+      .sort((a, b)=> (b.countries ? 1 : 0) - (a.countries ? 1 : 0));       // this country's own ways first
     tabsBox.textContent = '';
     const show = methods.length > 0;
     [refLabel, refInput, submitBtn].forEach(el=>{ if(el) el.style.display = show ? '' : 'none'; });
@@ -5681,8 +5785,9 @@ try{
       btn.addEventListener('click', ()=> selectMethod(m));
       tabsBox.appendChild(btn);
     });
-    selectMethod(methods[0]);
+    selectMethod(methods.find(m=> m.id === window.selectedPayMethod) || methods[0]);
   }
+  window.ycRerenderPay = render;
   // Called by the app once it has loaded the owner's accounts from Firestore (overrides the list above).
   window.ycApplyPayAccounts = function(cfg){
     if(cfg && typeof cfg === 'object'){ accounts = Object.assign({}, YC_PAY_ACCOUNTS, cfg); render(); }
@@ -18671,6 +18776,7 @@ const HOST_SHARE = 0.60;   // host gets 60% of a gift's dollar value, the app ke
 let buyCountryOverride = '';
 try{ buyCountryOverride = localStorage.getItem('yc_buy_country') || ''; }catch(_){}
 function buyCountry(){ return buyCountryOverride || myCountry || ''; }
+window.ycBuyCountry = buyCountry;
 function buyLoc(usd){ return usdToLocal(usd, buyCountry(), buyCurrencyOverride); }
 function buyCurrencyCode(){ return buyCurrencyOverride || (buyCountry() === 'USD_ONLY' ? 'USD' : (COUNTRY_CURRENCY[buyCountry()] || '')); }
 let buyCurrencyOverride = '';
@@ -18777,6 +18883,7 @@ function renderBuyPrices(){
 }
 function renderLocalFx(){
   renderBuyPrices();
+  try{ window.ycRerenderPay && window.ycRerenderPay(); }catch(_){}
   try{ renderWalletEarnings(); }catch(_){}
   document.querySelectorAll('.local-fx[data-birr]').forEach(el=>{
     const birr = parseFloat(el.dataset.birr);
@@ -24009,6 +24116,119 @@ coinPackages.addEventListener('click', (e)=>{
   btn.classList.add('selected');
   selectedPkg = parseInt(btn.dataset.amt, 10);
 });
+// ===== Buy page: balance, Custom amount and the bottom sheet "Buy N Aito Kef" =====
+(function ycBuyUi(){
+  const $ = (id)=> document.getElementById(id);
+  const sheet = $('buySheet'), bd = $('buySheetBackdrop'), titleEl = $('buySheetTitle'), priceEl = $('buySheetPrice'), viaEl = $('buySheetVia'),
+        tile = $('coinCustomTile'), row = $('coinCustomRow'), inp = $('coinCustomInput'), go = $('coinCustomGo'), msg = $('coinCustomMsg'), balEl = $('buyBalanceVal');
+  const CUSTOM_MIN = 50, CUSTOM_MAX = 100000;
+  const am = ()=> (typeof currentLang !== 'undefined' && currentLang === 'am');
+  const etb = (n)=>{ const per = (payCfg && Number(payCfg.priceEtb) > 0) ? Number(payCfg.priceEtb) : 5; return Math.round(n * per); };
+  const autoPkgs = ()=>{ const p = payCfg && payCfg.packages; return Array.isArray(p) ? p.map(x=> (x && typeof x === 'object') ? Number(x.coins || x.amount) : Number(x)) : [50, 100, 250, 500]; };
+  let askedCfg = false;
+  function clearSel(){ coinPackages.querySelectorAll('.coin-pkg').forEach(b=>b.classList.remove('selected')); tile.classList.remove('selected'); }
+  function closeSheet(){ sheet.classList.remove('open'); bd.classList.remove('open'); }
+  function update(){
+    if(!selectedPkg){ closeSheet(); return; }
+    const n = selectedPkg;
+    if(!payCfg && !askedCfg){ askedCfg = true; loadPayConfig().then(update); }
+    titleEl.textContent = am() ? (n.toLocaleString() + ' Aito Kef ግዛ') : ('Buy ' + n.toLocaleString() + ' Aito Kef');
+    const usd = n * COIN_PRICE_USD, loc = buyLoc(usd);
+    priceEl.textContent = '≈ ' + (loc ? fmtMoney(loc.amt, loc.cur) : fmtMoney(usd, 'USD'));
+    const autoOk = !!(payCfg && payCfg.autoCoins && (autoPkgs().includes(n) || (payCfg.customMax && n >= (payCfg.customMin || 50) && n <= payCfg.customMax)));
+    $('buyDirect').style.display = autoOk ? '' : 'none';
+    coinPayNow.textContent = '🔒 ' + (am() ? 'ክፈል ' : 'Pay ') + etb(n).toLocaleString() + ' ETB · ' + (am() ? 'Chapa ገጽ' : 'Chapa page');
+    payMobileBtn.textContent = '🔒 ' + (am() ? 'ክፈል ' : 'Pay ') + etb(n).toLocaleString() + ' ETB';
+    if(autoOk) applyChip(); else coinPayNow.style.display = 'none';
+    viaEl.style.display = (!autoOk && payCfg && payCfg.autoCoins) ? '' : 'none';
+    viaEl.textContent = am() ? 'ለዚህ መጠን በራስ-ሰር ክፍያ የለም፤ ከታች ባለው ዘዴ ይክፈሉ።' : 'Automatic payment is not available for this amount — pay with a method below.';
+    sheet.classList.add('open'); bd.classList.add('open');
+  }
+  function resetAll(){ say(''); payMethod = 'telebirr'; clearSel(); row.style.display = 'none'; inp.value = ''; go.disabled = true; msg.textContent = ''; closeSheet(); }
+  coinPackages.addEventListener('click', (e)=>{
+    if(!e.target.closest('.coin-pkg')) return;
+    row.style.display = 'none'; inp.value = ''; tile.classList.remove('selected'); msg.textContent = '';
+    update();
+  });
+  tile.addEventListener('click', ()=>{
+    clearSel(); tile.classList.add('selected'); selectedPkg = null; closeSheet();
+    row.style.display = 'flex'; go.disabled = true; try{ inp.focus(); }catch(_){}
+  });
+  inp.addEventListener('input', ()=>{
+    const n = parseInt(inp.value, 10);
+    const ok = Number.isInteger(n) && n >= CUSTOM_MIN && n <= CUSTOM_MAX;
+    go.disabled = !ok;
+    msg.className = 'auth-msg' + ((inp.value && !ok) ? ' error' : '');
+    msg.textContent = (inp.value && !ok) ? (am() ? ('ከ' + CUSTOM_MIN + ' እስከ ' + CUSTOM_MAX.toLocaleString() + ' ያስገቡ') : ('Enter ' + CUSTOM_MIN + ' to ' + CUSTOM_MAX.toLocaleString())) : '';
+  });
+  go.addEventListener('click', ()=>{
+    const n = parseInt(inp.value, 10);
+    if(!(Number.isInteger(n) && n >= CUSTOM_MIN && n <= CUSTOM_MAX)) return;
+    selectedPkg = n; try{ inp.blur(); }catch(_){} update();
+  });
+  // ---- Pay with telebirr / CBE Birr / Ebirr / M-Pesa: the person types the wallet phone number and approves on the phone ----
+  const chips = $('payChips'), phoneBox = $('payPhoneBox'), phoneIn = $('payPhone'), payMobileBtn = $('payMobileBtn');
+  let payMethod = 'telebirr', polling = false;
+  const say = (t, err)=>{ coinPayMsg.textContent = t; coinPayMsg.className = 'auth-msg' + (err ? ' error' : ''); };
+  function applyChip(){
+    chips.querySelectorAll('button').forEach(b=> b.classList.toggle('on', b.dataset.m === payMethod));
+    const mobile = payMethod !== 'page';
+    phoneBox.style.display = mobile ? '' : 'none';
+    coinPayNow.style.display = mobile ? 'none' : '';
+    phoneIn.placeholder = payMethod === 'mpesa' ? '7XXXXXXXX' : '9XXXXXXXX';
+    checkPhone();
+  }
+  const digits = ()=> String(phoneIn.value || '').replace(/\D/g, '');
+  function checkPhone(){ const d = digits(); payMobileBtn.disabled = polling || !(d.length === 9 || (d.length === 10 && d[0] === '0')); }
+  chips.addEventListener('click', (e)=>{ const b = e.target.closest('button'); if(!b) return; payMethod = b.dataset.m; say(''); applyChip(); });
+  phoneIn.addEventListener('input', ()=>{ phoneIn.value = phoneIn.value.replace(/[^\d]/g, '').slice(0, 10); checkPhone(); });
+  async function pollPayment(txRef){
+    for(let i = 0; i < 40; i++){                       // about 2 minutes
+      await new Promise(r=> setTimeout(r, 3000));
+      let st = 'pending', coins = 0;
+      try{ const r = await payApi({ action:'confirm', txRef }); if(r.ok){ st = r.data.state; coins = r.data.coins || 0; } }catch(_){}
+      if(st === 'paid'){
+        ycPayNotice((am() ? '✅ ኮይን ተጨምሯል! +' : '✅ Coins added! +') + coins, true);
+        selectedPkg = null; clearSel(); row.style.display = 'none'; inp.value = ''; closeSheet(); say('');
+        return 'paid';
+      }
+      if(st === 'failed' || st === 'mismatch' || st === 'no_supply' || st === 'unknown'){
+        say(am() ? 'ክፍያው አልተሳካም። እንደገና ሞክሩ ወይም ሌላ ዘዴ ይምረጡ።' : 'The payment did not go through. Try again or pick another way.', true);
+        return st;
+      }
+    }
+    say(am() ? 'ገና እየተጠበቀ ነው። ክፍያውን ካጸደቁ ኮይኑ በደቂቃዎች ውስጥ ይደርሳል።' : 'Still waiting. If you approved it, the coins will arrive within minutes.');
+    return 'timeout';
+  }
+  payMobileBtn.addEventListener('click', async ()=>{
+    if(!currentUser){ openAuthModal(); return; }
+    const n = selectedPkg; if(!n || polling) return;
+    polling = true; payMobileBtn.disabled = true;
+    say(am() ? 'ጥያቄ እየላክን ነው...' : 'Sending the request...');
+    try{
+      const r = await payApi({ action:'charge', coins:n, method:payMethod, mobile:digits() });
+      if(r.ok && r.data.txRef){
+        say(am() ? '📱 ስልክዎን ይመልከቱ — ክፍያውን በስልክዎ ያጽድቁ...' : '📱 Check your phone — approve the payment there...');
+        await pollPayment(r.data.txRef);
+      } else if(r.status === 409){ say(am() ? 'ይህ መጠን አልቋል' : 'This amount is sold out', true); }
+      else if(r.status === 400){ say(am() ? 'የስልክ ቁጥሩን ያረጋግጡ' : 'Please check the phone number', true); }
+      else if(r.status === 503){ say(am() ? 'አውቶማቲክ ክፍያ ገና አልተከፈተም' : 'Automatic payment is not available yet', true); }
+      else {                                            // the direct way did not work for this method: use the Chapa page instead
+        say(am() ? 'በቀጥታ መክፈል አልተቻለም — ወደ Chapa ክፍያ ገጽ እንወስድዎታለን...' : 'Direct payment did not work — taking you to the Chapa payment page...', true);
+        setTimeout(()=>{ payMethod = 'page'; applyChip(); coinPayNow.click(); }, 1200);
+      }
+    }catch(_){ say(am() ? 'ችግር ተፈጥሯል፣ እንደገና ሞክሩ' : 'Something went wrong, please try again', true); }
+    finally{ polling = false; checkPhone(); }
+  });
+  bd.addEventListener('click', ()=>{ selectedPkg = null; clearSel(); row.style.display = 'none'; inp.value = ''; closeSheet(); });
+  walletBuyBtn.addEventListener('click', ()=>{ resetAll(); try{ window.ycRerenderPay && window.ycRerenderPay(); }catch(_){} });
+  try{
+    new MutationObserver(()=>{
+      if(!buyCoinsModal.classList.contains('open')) closeSheet();
+      else if(balEl && walletCoinsVal) balEl.textContent = walletCoinsVal.textContent || '0';
+    }).observe(buyCoinsModal, { attributes:true, attributeFilter:['class'] });
+  }catch(_){}
+})();
 coinRequestSubmit.addEventListener('click', ()=>{
   if(!currentUser){ openAuthModal(); return; }
   if(!selectedPkg){ coinMsg.textContent = "Please select a package"; coinMsg.className = 'auth-msg error'; return; }
