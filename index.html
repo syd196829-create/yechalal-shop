@@ -7695,7 +7695,8 @@ try{
      ============================================================== -->
 <section id="textPosts">
   <div class="post-composer">
-    <textarea id="postComposerInput" class="field-input" placeholder="What's on your mind?" maxlength="1000" rows="3" style="width:100%; resize:vertical;"></textarea>
+    <div class="pc-title" id="pcTitle">What's happening today?</div>
+    <textarea id="postComposerInput" class="field-input" placeholder="What's on your mind?" maxlength="1000" rows="2" style="width:100%; resize:none;"></textarea>
     <div class="post-bg-picker" id="postBgPicker">
       <button class="post-bg-swatch none selected" data-bg="" title="Plain">Aa</button>
       <button class="post-bg-swatch" data-bg="#1877F2" title="Blue" style="background:#1877F2"></button>
@@ -7709,13 +7710,17 @@ try{
       <button class="post-bg-swatch gradient" data-bg="linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)" title="Sunset" style="background:linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)"></button>
       <button class="post-bg-swatch gradient" data-bg="linear-gradient(135deg,#1877F2,#0D9488)" title="Ocean" style="background:linear-gradient(135deg,#1877F2,#0D9488)"></button>
     </div>
-    <div class="post-video-row">
-      <button type="button" class="post-video-btn" id="postVideoBtn"><span class="post-video-plus" aria-hidden="true">+</span> Video</button>
-      <input type="file" id="postVideoInput" accept="video/*" hidden>
-      <span class="post-video-hint">5 min – 1 hour</span>
+    <div class="pc-actions">
+      <div class="post-video-row">
+        <button type="button" class="post-video-btn" id="postVideoBtn" title="5 min - 1 hour"><span class="post-video-plus" aria-hidden="true">+</span> Video</button>
+        <input type="file" id="postVideoInput" accept="video/*" hidden>
+        <button type="button" class="pc-emoji-btn" id="pcEmojiBtn" aria-label="Emoji">😊</button>
+        <span class="post-video-hint">5 min - 1 hour</span>
+      </div>
+      <button class="btn-upload yc-pv-hide" id="postComposerSubmit">Post</button>
     </div>
+    <div class="pc-emoji" id="pcEmoji"></div>
     <div class="post-video-msg" id="postVideoMsg"></div>
-    <button class="btn-upload yc-pv-hide" id="postComposerSubmit" style="margin-top:8px;">Post</button>
   </div>
   <div id="textPostsFeed"></div>
   <div id="textPostsSentinel" style="height:1px;"></div>
@@ -28794,7 +28799,8 @@ img.ycai-img{ transition:opacity .45s ease; }
   update();
 })();
 </script>
-
+</body>
+</html>
 
 <style id="yc-live-more-overlay-fix">
 /* short-video style nested LIVE controls: every opened menu is an overlay INSIDE
@@ -30481,5 +30487,61 @@ body{ padding-bottom:96px; }
 #textPosts .post-card .yc-fb-write-box{ color:#aab0e8 !important; }
 #textPosts .post-card .yc-old-comment-btn{ grid-column:1 / -1; }
 </style>
-</body>
-</html>
+
+<style id="ycComposerNeon">
+/* Home composer: dark-blue card (title, one text line, divider, Video / emoji on the left, Post + on the right). No Aa / colour picker. */
+#textPosts .post-composer{
+  margin:14px 12px !important; padding:20px 20px 16px !important; border-radius:26px !important; border:1px solid rgba(120,150,255,.28) !important;
+  background:linear-gradient(145deg,#1b2766,#162059 58%,#111a4a) !important; box-shadow:0 8px 30px rgba(10,16,70,.55), inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+#textPosts .post-composer .pc-title{ color:#fff; font-size:1.45rem; font-weight:800; line-height:1.2; margin:0 0 10px; }
+#textPosts .post-composer #postBgPicker{ display:none !important; }
+#textPosts .post-composer #postComposerInput{
+  background:transparent !important; border:0 !important; outline:0 !important; box-shadow:none !important; padding:2px 0 14px !important;
+  color:#fff !important; font-size:1.08rem; line-height:1.45; min-height:52px;
+}
+#textPosts .post-composer #postComposerInput::placeholder{ color:#aab4e6; opacity:1; }
+#textPosts .post-composer .pc-actions{ display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid rgba(190,200,255,.35); padding-top:14px; }
+#textPosts .post-composer .post-video-row{ display:flex; align-items:center; gap:14px; margin:0 !important; padding:0 !important; flex:1; min-width:0; }
+#textPosts .post-composer .post-video-btn{
+  display:inline-flex; align-items:center; gap:6px; background:transparent !important; border:0 !important; padding:4px 2px !important; color:#6fb0ff !important; font-size:1rem; font-weight:700; box-shadow:none !important;
+}
+#textPosts .post-composer .post-video-plus{ font-size:1.4rem; line-height:1; }
+#textPosts .post-composer .pc-emoji-btn{ background:transparent; border:0; font-size:1.55rem; line-height:1; padding:2px; }
+#textPosts .post-composer .post-video-hint{ display:none; }
+#textPosts .post-composer #postComposerSubmit,
+#textPosts .post-composer #postComposerSubmit.yc-pv-hide{
+  display:inline-flex !important; align-items:center; justify-content:center; width:auto !important; margin:0 !important; flex:0 0 auto;
+  padding:9px 20px !important; border-radius:22px !important; border:0 !important; font-size:1.02rem; font-weight:800; color:#5aa4ff !important;
+  background:rgba(70,120,255,.26) !important; box-shadow:none !important;
+}
+#textPosts .post-composer #postComposerSubmit.yc-pv-hide{ opacity:.45; pointer-events:none; }
+#textPosts .post-composer #postComposerSubmit::after{ content:' +'; margin-left:5px; }
+#textPosts .post-composer .pc-emoji{ display:none; flex-wrap:wrap; gap:6px; margin-top:12px; }
+#textPosts .post-composer .pc-emoji.open{ display:flex; }
+#textPosts .post-composer .pc-emoji button{ background:rgba(255,255,255,.08); border:0; border-radius:12px; font-size:1.5rem; padding:6px 9px; }
+</style>
+<script>
+(function(){
+  function init(){
+    var inp = document.getElementById('postComposerInput'), t = document.getElementById('pcTitle'), box = document.getElementById('pcEmoji'), btn = document.getElementById('pcEmojiBtn');
+    if(!inp || !box || !btn) return;
+    try{
+      t.textContent = cpT("What's happening today?", 'ዛሬ ምን እየሆነ ነው?');
+      inp.placeholder = cpT('Share your thoughts with the world…', 'ሀሳብህን ከዓለም ጋር አጋራ…');
+    }catch(_){}
+    ['😂','😍','🔥','👍','🎉','❤️','😎','🙏','💯','✨','🇪🇹','🌹','😭','👏'].forEach(function(e){
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = e;
+      b.onclick = function(){
+        var a = inp.selectionStart == null ? inp.value.length : inp.selectionStart, z = inp.selectionEnd == null ? a : inp.selectionEnd;
+        inp.value = inp.value.slice(0, a) + e + inp.value.slice(z); inp.focus();
+        try{ inp.setSelectionRange(a + e.length, a + e.length); }catch(_){}
+        inp.dispatchEvent(new Event('input', { bubbles:true }));
+      };
+      box.appendChild(b);
+    });
+    btn.onclick = function(){ box.classList.toggle('open'); };
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else setTimeout(init, 0);
+})();
+</script>
